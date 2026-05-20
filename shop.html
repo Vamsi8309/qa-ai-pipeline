@@ -1,0 +1,1602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DemoShop — Online Store</title>
+
+  <!-- Sentry Browser SDK -->
+  <script src="https://browser.sentry-cdn.com/7.99.0/bundle.min.js" crossorigin="anonymous"></script>
+
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────────── */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #f0f2f0;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    /* ── Site Header ──────────────────────────────────────────── */
+    .site-header {
+      background: linear-gradient(135deg, #1a4731 0%, #2d6a4f 100%);
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    .header-inner {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 12px 28px;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    .logo {
+      font-size: 1.65rem;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: #74c69d; }
+
+    .search-wrap {
+      flex: 1;
+      display: flex;
+      max-width: 580px;
+    }
+    .search-wrap input {
+      flex: 1;
+      padding: 10px 16px;
+      border: 2px solid #74c69d;
+      border-right: none;
+      border-radius: 6px 0 0 6px;
+      font-size: 0.95rem;
+      outline: none;
+      color: #222;
+    }
+    .search-wrap button {
+      padding: 10px 20px;
+      background: #74c69d;
+      color: #1a4731;
+      font-weight: 700;
+      border: none;
+      border-radius: 0 6px 6px 0;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    .search-wrap button:hover { background: #52b788; }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: auto;
+    }
+    .cart-btn {
+      background: rgba(255,255,255,0.14);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 9px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .cart-btn:hover { background: rgba(255,255,255,0.24); }
+    .cart-badge {
+      background: #f77f00;
+      color: #fff;
+      border-radius: 10px;
+      padding: 1px 7px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-left: 4px;
+    }
+    .auth-btn {
+      background: #f77f00;
+      color: #fff;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    .auth-btn:hover { background: #e06d00; }
+
+    /* ── Category Nav ─────────────────────────────────────────── */
+    .cat-nav {
+      background: #2d6a4f;
+      overflow-x: auto;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .cat-nav-inner {
+      display: flex;
+      padding: 0 28px;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    .cat-nav button {
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: #b7e4c7;
+      padding: 12px 18px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .cat-nav button:hover,
+    .cat-nav button.active {
+      color: #fff;
+      border-bottom-color: #74c69d;
+      background: rgba(255,255,255,0.06);
+    }
+
+    /* ── Main & Pages ─────────────────────────────────────────── */
+    .main-wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 20px 48px;
+    }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── Hero Banner ──────────────────────────────────────────── */
+    .hero {
+      background: linear-gradient(135deg, #1a4731 0%, #40916c 55%, #74c69d 100%);
+      color: #fff;
+      border-radius: 14px;
+      padding: 44px 40px;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .hero-text h1 { font-size: 2rem; font-weight: 800; margin-bottom: 10px; }
+    .hero-text p { font-size: 1.05rem; opacity: 0.88; margin-bottom: 20px; }
+    .hero-btn {
+      background: #f77f00;
+      color: #fff;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .hero-btn:hover { background: #e06d00; }
+    .hero-emoji { font-size: 5rem; line-height: 1; }
+
+    /* ── Section Header ───────────────────────────────────────── */
+    .section-hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .section-title { font-size: 1.25rem; font-weight: 700; color: #1a4731; }
+
+    .sort-select {
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #fff;
+      font-size: 0.88rem;
+      cursor: pointer;
+      outline: none;
+    }
+
+    /* ── Product Grid ─────────────────────────────────────────── */
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 18px;
+    }
+    .product-card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+    }
+    .product-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 22px rgba(0,0,0,0.12);
+    }
+    .prod-img {
+      background: linear-gradient(135deg, #d8f3dc, #b7e4c7);
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.8rem;
+    }
+    .prod-body { padding: 13px 14px 14px; }
+    .prod-cat {
+      font-size: 0.72rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 5px;
+    }
+    .prod-name {
+      font-weight: 600;
+      font-size: 0.92rem;
+      color: #1a4731;
+      margin-bottom: 8px;
+      min-height: 36px;
+    }
+    .prod-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .prod-price { font-size: 1.05rem; font-weight: 800; color: #1a4731; }
+    .prod-rating { font-size: 0.78rem; color: #f77f00; }
+    .prod-add-btn {
+      width: 100%;
+      padding: 9px;
+      background: #1a4731;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .prod-add-btn:hover { background: #2d6a4f; }
+
+    /* ── No Results ───────────────────────────────────────────── */
+    .no-results {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+      grid-column: 1 / -1;
+    }
+    .no-results .nr-icon { font-size: 3rem; margin-bottom: 12px; }
+
+    /* ── Product Detail Page ──────────────────────────────────── */
+    .back-btn {
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #555;
+      font-size: 0.88rem;
+      margin-bottom: 20px;
+      transition: all 0.2s;
+    }
+    .back-btn:hover { background: #f5f5f5; }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      background: #fff;
+      border-radius: 12px;
+      padding: 32px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+    .detail-img {
+      background: linear-gradient(135deg, #d8f3dc, #b7e4c7);
+      border-radius: 10px;
+      height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 7rem;
+    }
+    .detail-info h2 {
+      font-size: 1.55rem;
+      font-weight: 700;
+      color: #1a4731;
+      margin-bottom: 8px;
+    }
+    .detail-cat {
+      font-size: 0.78rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+    .detail-rating { color: #f77f00; font-size: 0.9rem; margin-bottom: 14px; }
+    .detail-price {
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: #f77f00;
+      margin-bottom: 16px;
+    }
+    .detail-desc { color: #555; line-height: 1.7; margin-bottom: 22px; }
+    .qty-row { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+    .qty-label { font-weight: 600; }
+    .qty-ctrl {
+      display: flex;
+      align-items: center;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .qty-ctrl button {
+      padding: 8px 14px;
+      background: #f5f5f5;
+      border: none;
+      cursor: pointer;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .qty-ctrl button:hover { background: #e8e8e8; }
+    .qty-ctrl input {
+      width: 56px;
+      text-align: center;
+      border: none;
+      border-left: 1px solid #ddd;
+      border-right: 1px solid #ddd;
+      padding: 8px 4px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      outline: none;
+    }
+    .detail-add-btn {
+      width: 100%;
+      padding: 13px;
+      background: #f77f00;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .detail-add-btn:hover { background: #e06d00; }
+
+    /* ── Cart Page ────────────────────────────────────────────── */
+    .page-title { font-size: 1.4rem; font-weight: 700; color: #1a4731; margin-bottom: 20px; }
+    .cart-layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 22px;
+      align-items: start;
+    }
+    .cart-items-box {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      overflow: hidden;
+    }
+    .cart-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 15px 20px;
+      border-bottom: 1px solid #f2f2f2;
+    }
+    .cart-row:last-child { border-bottom: none; }
+    .cart-icon { font-size: 2.2rem; width: 54px; text-align: center; flex-shrink: 0; }
+    .cart-name { flex: 1; font-weight: 600; color: #1a4731; font-size: 0.93rem; }
+    .cart-qty-ctrl { display: flex; align-items: center; gap: 8px; }
+    .cart-qty-ctrl button {
+      width: 28px;
+      height: 28px;
+      background: #f0f0f0;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .cart-qty-ctrl button:hover { background: #e0e0e0; }
+    .cart-qty-val { width: 30px; text-align: center; font-weight: 700; font-size: 0.95rem; }
+    .cart-item-price { font-weight: 700; color: #f77f00; white-space: nowrap; font-size: 0.95rem; }
+    .remove-btn {
+      background: none;
+      border: none;
+      color: #e74c3c;
+      cursor: pointer;
+      font-size: 1.15rem;
+      padding: 4px 6px;
+      transition: transform 0.15s;
+      flex-shrink: 0;
+    }
+    .remove-btn:hover { transform: scale(1.2); }
+    .cart-summary-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 22px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+    .cart-summary-box h3 { font-size: 1rem; font-weight: 700; color: #1a4731; margin-bottom: 14px; }
+    .sum-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      font-size: 0.9rem;
+      border-bottom: 1px solid #f2f2f2;
+    }
+    .sum-row.total {
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: #1a4731;
+      border-bottom: none;
+      margin-top: 6px;
+    }
+    .checkout-cta {
+      width: 100%;
+      padding: 13px;
+      background: #f77f00;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 14px;
+      transition: background 0.2s;
+    }
+    .checkout-cta:hover { background: #e06d00; }
+    .empty-cart {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+    .empty-cart .ec-icon { font-size: 4rem; margin-bottom: 14px; }
+    .empty-cart p { font-size: 1.05rem; margin-bottom: 16px; }
+
+    /* ── Auth Page ────────────────────────────────────────────── */
+    .auth-wrap { max-width: 460px; margin: 0 auto; }
+    .auth-tabs { display: flex; border-bottom: 2px solid #e0e0e0; margin-bottom: 22px; }
+    .auth-tab {
+      flex: 1;
+      padding: 12px;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #999;
+      transition: all 0.2s;
+    }
+    .auth-tab.active { color: #1a4731; border-bottom-color: #1a4731; }
+    .auth-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 26px 28px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.09);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Form Elements ────────────────────────────────────────── */
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 5px;
+    }
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 10px 13px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.92rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      font-family: inherit;
+    }
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: #2d6a4f;
+      box-shadow: 0 0 0 3px rgba(45,106,79,0.1);
+    }
+    .field-hint { font-size: 0.78rem; color: #999; margin-top: 4px; }
+    .field-err  { font-size: 0.78rem; color: #e74c3c; margin-top: 4px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .submit-btn {
+      width: 100%;
+      padding: 12px;
+      background: #1a4731;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: background 0.2s;
+    }
+    .submit-btn:hover { background: #2d6a4f; }
+
+    /* ── Checkout Page ────────────────────────────────────────── */
+    .checkout-grid {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 22px;
+      align-items: start;
+    }
+    .checkout-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 22px 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      margin-bottom: 18px;
+    }
+    .checkout-card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1a4731;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .coupon-row { display: flex; gap: 10px; }
+    .coupon-row input {
+      flex: 1;
+      padding: 10px 13px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.92rem;
+      outline: none;
+      font-family: inherit;
+    }
+    .coupon-row input:focus { border-color: #2d6a4f; }
+    .coupon-apply-btn {
+      padding: 10px 18px;
+      background: #2d6a4f;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.88rem;
+      white-space: nowrap;
+    }
+    .coupon-msg { font-size: 0.82rem; margin-top: 7px; font-weight: 600; }
+    .coupon-msg.ok  { color: #27ae60; }
+    .coupon-msg.bad { color: #e74c3c; }
+
+    .order-sidebar {
+      background: #fff;
+      border-radius: 12px;
+      padding: 22px 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+    .order-sidebar h3 { font-size: 1rem; font-weight: 700; color: #1a4731; margin-bottom: 14px; }
+    .order-item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 0;
+      border-bottom: 1px solid #f2f2f2;
+      font-size: 0.87rem;
+    }
+    .order-item-row:last-of-type { border-bottom: none; }
+    .oi-name { color: #333; }
+    .oi-price { font-weight: 700; color: #1a4731; white-space: nowrap; margin-left: 8px; }
+    .place-order-btn {
+      width: 100%;
+      padding: 14px;
+      background: #f77f00;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 14px;
+      transition: background 0.2s;
+    }
+    .place-order-btn:hover { background: #e06d00; }
+
+    /* ── Confirmation Page ────────────────────────────────────── */
+    .confirm-wrap {
+      max-width: 480px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 14px;
+      padding: 56px 36px;
+      text-align: center;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.09);
+    }
+    .confirm-icon { font-size: 5rem; margin-bottom: 18px; }
+    .confirm-wrap h2 { font-size: 1.7rem; font-weight: 700; color: #1a4731; margin-bottom: 10px; }
+    .confirm-wrap p { color: #666; margin-bottom: 6px; font-size: 0.95rem; }
+    .continue-btn {
+      display: inline-block;
+      margin-top: 24px;
+      padding: 12px 30px;
+      background: #1a4731;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .continue-btn:hover { background: #2d6a4f; }
+
+    /* ── Toast ────────────────────────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1a4731;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.22);
+      z-index: 9999;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* ── Footer ───────────────────────────────────────────────── */
+    .site-footer {
+      background: #1a4731;
+      color: #b7e4c7;
+      text-align: center;
+      padding: 24px 20px;
+      font-size: 0.82rem;
+    }
+    .site-footer p + p { margin-top: 5px; opacity: 0.7; }
+
+    /* ── Responsive ───────────────────────────────────────────── */
+    @media (max-width: 800px) {
+      .detail-grid   { grid-template-columns: 1fr; }
+      .cart-layout   { grid-template-columns: 1fr; }
+      .checkout-grid { grid-template-columns: 1fr; }
+      .form-row      { grid-template-columns: 1fr; }
+      .hero-emoji    { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Site Header ───────────────────────────────────────────── -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="logo" onclick="showPage('home')">Demo<span>Shop</span></div>
+
+    <div class="search-wrap">
+      <input type="text" id="searchInput" placeholder="Search for products..." />
+      <button onclick="doSearch()">🔍 Search</button>
+    </div>
+
+    <div class="header-actions">
+      <button class="cart-btn" onclick="showPage('cart')">
+        🛒 Cart <span class="cart-badge" id="cartBadge">0</span>
+      </button>
+      <button class="auth-btn" id="authBtn" onclick="showPage('auth')">Log In</button>
+    </div>
+  </div>
+</header>
+
+<!-- ── Category Nav ──────────────────────────────────────────── -->
+<nav class="cat-nav">
+  <div class="cat-nav-inner">
+    <button id="cat-all"        class="active"  onclick="filterCategory('all')">All Products</button>
+    <button id="cat-books"                      onclick="filterCategory('books')">Books</button>
+    <button id="cat-computers"                  onclick="filterCategory('computers')">Computers</button>
+    <button id="cat-electronics"                onclick="filterCategory('electronics')">Electronics</button>
+    <button id="cat-apparel"                    onclick="filterCategory('apparel')">Apparel</button>
+    <button id="cat-jewelry"                    onclick="filterCategory('jewelry')">Jewelry</button>
+    <button id="cat-gift-cards"                 onclick="filterCategory('gift-cards')">Gift Cards</button>
+  </div>
+</nav>
+
+<!-- ── Main ──────────────────────────────────────────────────── -->
+<main class="main-wrap">
+
+  <!-- ════ HOME PAGE ════ -->
+  <div id="page-home" class="page active">
+
+    <div class="hero">
+      <div class="hero-text">
+        <h1>Welcome to DemoShop</h1>
+        <p>Explore our wide range of products at unbeatable prices.</p>
+        <button class="hero-btn" onclick="filterCategory('electronics')">Shop Electronics</button>
+      </div>
+      <div class="hero-emoji">🛍️</div>
+    </div>
+
+    <div class="section-hdr">
+      <h2 class="section-title" id="productsTitle">Featured Products</h2>
+      <select class="sort-select" id="sortSelect" onchange="renderProducts()">
+        <option value="default">Sort: Default</option>
+        <option value="price-asc">Price: Low to High</option>
+        <option value="price-desc">Price: High to Low</option>
+        <option value="name-asc">Name: A–Z</option>
+        <option value="rating">Top Rated</option>
+      </select>
+    </div>
+
+    <div class="product-grid" id="productGrid"></div>
+  </div>
+
+  <!-- ════ PRODUCT DETAIL PAGE ════ -->
+  <div id="page-product" class="page">
+    <button class="back-btn" onclick="showPage('home')">← Back to Products</button>
+    <div class="detail-grid">
+      <div class="detail-img" id="detailImg"></div>
+      <div class="detail-info">
+        <div class="detail-cat" id="detailCat"></div>
+        <h2 id="detailName"></h2>
+        <div class="detail-rating" id="detailRating"></div>
+        <div class="detail-price" id="detailPrice"></div>
+        <p class="detail-desc" id="detailDesc"></p>
+        <div class="qty-row">
+          <span class="qty-label">Qty:</span>
+          <div class="qty-ctrl">
+            <button onclick="changeDetailQty(-1)">−</button>
+            <input type="number" id="detailQty" value="1" min="1" max="99" />
+            <button onclick="changeDetailQty(1)">+</button>
+          </div>
+        </div>
+        <button class="detail-add-btn" onclick="addToCartFromDetail()">🛒 Add to Cart</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ CART PAGE ════ -->
+  <div id="page-cart" class="page">
+    <h2 class="page-title">Shopping Cart</h2>
+    <div id="cartContent"></div>
+  </div>
+
+  <!-- ════ AUTH PAGE ════ -->
+  <div id="page-auth" class="page">
+    <div class="auth-wrap">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login"    onclick="switchTab('login')">Log In</button>
+        <button class="auth-tab"        id="tab-register" onclick="switchTab('register')">Register</button>
+      </div>
+
+      <div class="auth-card">
+        <!-- Login -->
+        <div class="tab-panel active" id="panel-login">
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="loginEmail" placeholder="you@example.com" />
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="loginPassword" placeholder="Enter your password" />
+            <div class="field-hint">Password is case-sensitive</div>
+          </div>
+          <button class="submit-btn" onclick="submitLogin()">Log In</button>
+        </div>
+
+        <!-- Register -->
+        <div class="tab-panel" id="panel-register">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="regName" placeholder="Jane Doe" />
+          </div>
+          <div class="form-group">
+            <label>Email Address</label>
+            <!-- BUG 12: Validation doesn't require TLD — user@domain passes -->
+            <input type="text" id="regEmail" placeholder="you@example.com" oninput="watchRegEmail()" />
+            <div class="field-hint">Enter a valid email (e.g. name@domain.com)</div>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <!-- BUG 1: type="text" — password is NOT masked, displays in plain text -->
+            <input type="text" id="regPassword" placeholder="Create a password" oninput="watchRegPassword()" />
+            <div class="field-hint">Minimum 8 characters</div>
+          </div>
+          <div class="form-group">
+            <label>Confirm Password</label>
+            <input type="password" id="regConfirm" placeholder="Repeat your password" />
+            <!-- BUG 13: confirm check only verifies non-empty, not equality -->
+          </div>
+          <button class="submit-btn" onclick="submitRegister()">Create Account</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ CHECKOUT PAGE ════ -->
+  <div id="page-checkout" class="page">
+    <h2 class="page-title">Checkout</h2>
+    <div class="checkout-grid">
+
+      <!-- Left: Forms -->
+      <div>
+        <!-- Billing -->
+        <div class="checkout-card">
+          <h3>Billing Information</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>First Name</label>
+              <input type="text" id="firstName" placeholder="Jane" />
+            </div>
+            <div class="form-group">
+              <label>Last Name</label>
+              <input type="text" id="lastName" placeholder="Doe" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="chkEmail" placeholder="you@example.com" />
+          </div>
+          <div class="form-group">
+            <label>Phone Number</label>
+            <!-- BUG 2: Phone field accepts letters — no numeric validation -->
+            <input type="text" id="chkPhone" placeholder="555-123-4567" oninput="watchPhone()" />
+            <div class="field-hint">Numbers only (e.g. 555-123-4567)</div>
+          </div>
+          <div class="form-group">
+            <label>Street Address</label>
+            <input type="text" id="chkAddress" placeholder="123 Main Street" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>City</label>
+              <input type="text" id="chkCity" placeholder="Springfield" />
+            </div>
+            <div class="form-group">
+              <label>ZIP / Postal Code</label>
+              <!-- BUG 3: ZIP accepts letters — no numeric validation -->
+              <input type="text" id="chkZip" placeholder="12345" oninput="watchZip()" maxlength="10" />
+              <div class="field-hint">5-digit numeric ZIP code</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment -->
+        <div class="checkout-card">
+          <h3>Payment Information</h3>
+          <div class="form-group">
+            <label>Cardholder Name</label>
+            <input type="text" id="cardName" placeholder="Jane Doe" />
+          </div>
+          <div class="form-group">
+            <label>Card Number</label>
+            <!-- BUG 4: Accepts any length — no 16-digit or Luhn validation -->
+            <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456"
+                   oninput="watchCard()" maxlength="19" />
+            <div class="field-hint">16-digit card number</div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Expiry (MM/YY)</label>
+              <input type="text" id="cardExpiry" placeholder="08/27" maxlength="5" />
+            </div>
+            <div class="form-group">
+              <label>CVV</label>
+              <input type="text" id="cardCvv" placeholder="123" maxlength="4" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Coupon -->
+        <div class="checkout-card">
+          <h3>Discount Coupon</h3>
+          <!-- BUG 14: Any 4+ character string gets 10% off, not just "SAVE10" -->
+          <div class="coupon-row">
+            <input type="text" id="couponInput" placeholder="Enter coupon code (try SAVE10)" />
+            <button class="coupon-apply-btn" onclick="applyCoupon()">Apply</button>
+          </div>
+          <div class="coupon-msg" id="couponMsg"></div>
+        </div>
+      </div>
+
+      <!-- Right: Order Summary -->
+      <div>
+        <div class="order-sidebar">
+          <h3>Order Summary</h3>
+          <div id="orderItems"></div>
+          <div class="sum-row" style="margin-top:12px">
+            <span>Subtotal</span>
+            <span id="ordSubtotal">$0.00</span>
+          </div>
+          <div class="sum-row">
+            <span>Shipping</span>
+            <span>$5.00</span>
+          </div>
+          <div class="sum-row" id="discRow" style="display:none">
+            <span>Discount (10%)</span>
+            <span id="discAmt" style="color:#27ae60">−$0.00</span>
+          </div>
+          <!-- BUG 5: "Total" shown does NOT include $5 shipping — shows subtotal only -->
+          <div class="sum-row total">
+            <span>Total</span>
+            <span id="ordTotal">$0.00</span>
+          </div>
+          <button class="place-order-btn" onclick="placeOrder()">Place Order 🔒</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════ CONFIRMATION PAGE ════ -->
+  <div id="page-confirm" class="page">
+    <div class="confirm-wrap">
+      <div class="confirm-icon">✅</div>
+      <h2>Order Confirmed!</h2>
+      <p>Thank you for your purchase.</p>
+      <p>Order <strong id="orderNum"></strong></p>
+      <p style="margin-top:12px; color:#aaa; font-size:0.88rem">
+        A confirmation email has been sent to your inbox.
+      </p>
+      <button class="continue-btn" onclick="continueShopping()">Continue Shopping</button>
+    </div>
+  </div>
+
+</main>
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
+
+<!-- Footer -->
+<footer class="site-footer">
+  <p>© 2024 DemoShop — A demo e-commerce platform for testing and QA purposes.</p>
+  <p>Powered by Node.js · Sentry · Gemini AI · Jira</p>
+</footer>
+
+<script>
+  // ────────────────────────────────────────────────────────────
+  //  Sentry Init
+  // ────────────────────────────────────────────────────────────
+  Sentry.init({
+    dsn: "https://192fcf070d3ac1a68c1b8edb165d08e5@o4511337470623744.ingest.us.sentry.io/4511347565133825",
+    environment: "development"
+  });
+
+  // ────────────────────────────────────────────────────────────
+  //  Bug Reporter  →  Terminal + Sentry + Gemini + Jira
+  // ────────────────────────────────────────────────────────────
+  const reportedShopIssues = new Set();
+
+  async function logIssue(field, message, data) {
+    const key = `${field}::${message}`;
+    if (reportedShopIssues.has(key)) return;
+    reportedShopIssues.add(key);
+
+    // Capture in Sentry dashboard
+    Sentry.captureMessage(`${field}: ${message}`, "warning");
+
+    // Fire automation pipeline (terminal → Gemini → Jira)
+    try {
+      await fetch("http://localhost:3000/log-bug", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ field, message, data: String(data ?? "") })
+      });
+    } catch (e) {
+      console.warn("[DemoShop] Could not reach log server:", e.message);
+    }
+  }
+
+  // ────────────────────────────────────────────────────────────
+  //  Products Catalogue
+  // ────────────────────────────────────────────────────────────
+  const PRODUCTS = [
+    { id:1,  name:"Build Your Future",          category:"books",       price:15.99,   rating:4.2, reviews:23, icon:"📚", desc:"A comprehensive guide to personal and professional growth strategies used by top executives worldwide." },
+    { id:2,  name:"Computing and Internet",     category:"books",       price:12.50,   rating:3.8, reviews:17, icon:"💡", desc:"Everything you need to know about modern computing, networking, and the Internet of Things." },
+    { id:3,  name:"Fiction Stories Vol. 3",     category:"books",       price:9.99,    rating:4.5, reviews:41, icon:"📖", desc:"A gripping collection of award-winning fictional short stories across mystery, sci-fi, and romance." },
+    { id:4,  name:"14.1-inch Laptop Pro",       category:"electronics", price:1350.00, rating:4.0, reviews:12, icon:"💻", desc:"High-performance laptop with 16GB RAM, 512GB NVMe SSD, and 12-hour battery life." },
+    { id:5,  name:"9-inch Portable DVD Player", category:"electronics", price:89.99,   rating:3.5, reviews:8,  icon:"📀", desc:"Compact portable DVD player with 9-inch HD screen, perfect for long trips and commutes." },
+    { id:6,  name:"Smartphone X12",             category:"electronics", price:699.00,  rating:4.7, reviews:56, icon:"📱", desc:"Latest generation 5G smartphone with 108MP triple camera, 6000mAh battery, and 6.8-inch AMOLED display." },
+    { id:7,  name:"Desktop Computer Pro",       category:"computers",   price:899.00,  rating:4.1, reviews:19, icon:"🖥️", desc:"Powerful Intel i7 desktop with 32GB RAM and dedicated GPU — ideal for home office and creative work." },
+    { id:8,  name:"RGB Gaming Mouse",           category:"computers",   price:45.99,   rating:4.3, reviews:34, icon:"🖱️", desc:"High-precision 16000 DPI gaming mouse with 7 programmable buttons and customizable RGB lighting." },
+    { id:9,  name:"USB-C Hub 7-Port",           category:"computers",   price:22.99,   rating:3.9, reviews:28, icon:"🔌", desc:"Expand your connectivity with 7 ports: USB-C, USB-A 3.0, HDMI, SD card, and 100W pass-through charging." },
+    { id:10, name:"Running Shoes Ultra",        category:"apparel",     price:79.99,   rating:4.4, reviews:45, icon:"👟", desc:"Professional running shoes with advanced memory-foam cushioning and breathable mesh upper." },
+    { id:11, name:"Elegant Gold Ring",          category:"jewelry",     price:299.00,  rating:4.6, reviews:15, icon:"💍", desc:"Handcrafted 18K gold ring set with a genuine diamond — perfect for engagements and anniversaries." },
+    { id:12, name:"Gift Card $25",              category:"gift-cards",  price:25.00,   rating:5.0, reviews:0,  icon:"🎁", desc:"The perfect gift for anyone. Valid on all products. Never expires." }
+  ];
+
+  // ────────────────────────────────────────────────────────────
+  //  App State
+  // ────────────────────────────────────────────────────────────
+  let cart            = [];
+  let currentProduct  = null;
+  let currentUser     = null;
+  let currentCategory = "all";
+  let activeSearch    = "";
+  let discountApplied = false;
+
+  // ────────────────────────────────────────────────────────────
+  //  Page Navigation
+  // ────────────────────────────────────────────────────────────
+  function showPage(name) {
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    const pg = document.getElementById(`page-${name}`);
+    if (pg) { pg.classList.add("active"); window.scrollTo(0, 0); }
+    if (name === "cart")     renderCart();
+    if (name === "checkout") renderCheckout();
+  }
+
+  // ────────────────────────────────────────────────────────────
+  //  Category Filter
+  // ────────────────────────────────────────────────────────────
+  function filterCategory(cat) {
+    currentCategory = cat;
+    activeSearch    = "";
+    document.getElementById("searchInput").value = "";
+
+    document.querySelectorAll(".cat-nav button").forEach(b => b.classList.remove("active"));
+    const btn = document.getElementById(`cat-${cat}`);
+    if (btn) btn.classList.add("active");
+
+    const labels = { all:"All Products", books:"Books", computers:"Computers",
+                     electronics:"Electronics", apparel:"Apparel",
+                     jewelry:"Jewelry", "gift-cards":"Gift Cards" };
+    document.getElementById("productsTitle").textContent = labels[cat] || "Products";
+
+    showPage("home");
+    renderProducts();
+  }
+
+  // ────────────────────────────────────────────────────────────
+  //  Search
+  //  BUG 6: Empty search term submits and shows all products
+  //  BUG 7: Search is case-sensitive — 'laptop' misses 'Laptop'
+  // ────────────────────────────────────────────────────────────
+  function doSearch() {
+    const term = document.getElementById("searchInput").value.trim();
+
+    // BUG 6: should reject empty term, but proceeds and shows all products
+    if (term === "") {
+      logIssue(
+        "Search → Query",
+        "Empty search term submitted — returns all products instead of showing an error",
+        "(empty string)"
+      );
+      activeSearch = "";
+      renderProducts();
+      return;
+    }
+
+    // BUG 7: term stored verbatim — filter will be case-sensitive
+    activeSearch    = term;
+    currentCategory = "all";
+    document.querySelectorAll(".cat-nav button").forEach(b => b.classList.remove("active"));
+    document.getElementById("cat-all").classList.add("active");
+    document.getElementById("productsTitle").textContent = `Results for: "${term}"`;
+    renderProducts();
+  }
+
+  // ────────────────────────────────────────────────────────────
+  //  Render Products
+  //  BUG 7 (cont): case-sensitive string match
+  //  BUG 8: Price sort uses string comparison, not numeric
+  //  BUG 9: Rating shows NaN for products with 0 reviews
+  // ────────────────────────────────────────────────────────────
+  function renderProducts() {
+    let list = [...PRODUCTS];
+
+    // Category filter
+    if (currentCategory !== "all") {
+      list = list.filter(p => p.category === currentCategory);
+    }
+
+    // Search filter — BUG 7: no .toLowerCase() → case-sensitive
+    if (activeSearch) {
+      const before = list.length;
+      list = list.filter(p =>
+        p.name.includes(activeSearch) ||
+        p.desc.includes(activeSearch) ||
+        p.category.includes(activeSearch)
+      );
+      if (list.length === 0 && before > 0) {
+        logIssue(
+          "Search → Case Sensitivity",
+          `Search for "${activeSearch}" returned 0 results due to case-sensitive matching — try different casing`,
+          activeSearch
+        );
+      }
+    }
+
+    // Sort — BUG 8: price sort uses string localeCompare, not numeric
+    const sortVal = document.getElementById("sortSelect").value;
+    if (sortVal === "price-asc") {
+      list.sort((a, b) => String(a.price).localeCompare(String(b.price))); // BUG: string sort
+      logIssue(
+        "Sort → Price Low to High",
+        "Prices sorted alphabetically as strings instead of numerically — $1350 appears before $699",
+        "String sort: '1350' < '699' because '1' < '6'"
+      );
+    } else if (sortVal === "price-desc") {
+      list.sort((a, b) => String(b.price).localeCompare(String(a.price))); // BUG: same issue
+    } else if (sortVal === "name-asc") {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortVal === "rating") {
+      list.sort((a, b) => b.rating - a.rating);
+    }
+
+    const grid = document.getElementById("productGrid");
+
+    if (list.length === 0) {
+      grid.innerHTML = `<div class="no-results"><div class="nr-icon">🔍</div><p>No products found. Try a different search or category.</p></div>`;
+      return;
+    }
+
+    grid.innerHTML = list.map(p => {
+      const ratingStr = p.reviews === 0
+        ? `⭐ NaN (0 reviews)`   // BUG 9: shown but only logged when user opens the product
+        : `⭐ ${p.rating.toFixed(1)} (${p.reviews})`;
+
+      return `
+        <div class="product-card" onclick="showProductDetail(${p.id})">
+          <div class="prod-img">${p.icon}</div>
+          <div class="prod-body">
+            <div class="prod-cat">${p.category}</div>
+            <div class="prod-name">${p.name}</div>
+            <div class="prod-meta">
+              <span class="prod-price">$${p.price.toFixed(2)}</span>
+              <span class="prod-rating">${ratingStr}</span>
+            </div>
+            <button class="prod-add-btn"
+              onclick="event.stopPropagation(); quickAddToCart(${p.id})">
+              + Add to Cart
+            </button>
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  // ────────────────────────────────────────────────────────────
+  //  Product Detail
+  // ────────────────────────────────────────────────────────────
+  function showProductDetail(id) {
+    currentProduct = PRODUCTS.find(p => p.id === id);
+    if (!currentProduct) return;
+    const p = currentProduct;
+    document.getElementById("detailImg").textContent  = p.icon;
+    document.getElementById("detailCat").textContent  = p.category.toUpperCase();
+    document.getElementById("detailName").textContent = p.name;
+    document.getElementById("detailPrice").textContent = `$${p.price.toFixed(2)}`;
+    document.getElementById("detailDesc").textContent = p.desc;
+    document.getElementById("detailQty").value = 1;
+    // BUG 9: NaN rating when reviews = 0 (division by zero)
+    const avgRating = (p.rating * p.reviews) / p.reviews; // NaN when reviews=0
+    if (p.reviews === 0) {
+      logIssue(
+        "Product → Rating Display",
+        `Product "${p.name}" has 0 reviews — rating formula produces NaN (division by zero)`,
+        p.name
+      );
+    }
+    document.getElementById("detailRating").textContent = p.reviews === 0
+      ? `⭐ NaN / 5  —  0 reviews`
+      : `⭐ ${avgRating.toFixed(1)} / 5  —  ${p.reviews} reviews`;
+    showPage("product");
+  }
+
+  function changeDetailQty(delta) {
+    const inp = document.getElementById("detailQty");
+    let v = parseInt(inp.value) + delta;
+    if (v < 1) v = 1;
+    if (v > 99) v = 99;
+    inp.value = v;
+  }
+
+  function addToCartFromDetail() {
+    if (!currentProduct) return;
+    const qty = parseInt(document.getElementById("detailQty").value) || 1;
+    addToCart(currentProduct.id, qty);
+    showToast(`✓ ${currentProduct.name} added to cart`);
+    showPage("home");
+  }
+
+  function quickAddToCart(id) {
+    addToCart(id, 1);
+    const p = PRODUCTS.find(x => x.id === id);
+    showToast(`✓ ${p?.name || "Item"} added to cart`);
+  }
+
+  // ────────────────────────────────────────────────────────────
+  //  Cart Operations
+  //  BUG 10: Badge count shows N+1 (off-by-one)
+  //  BUG 11: Quantity can go to 0 or negative (no minimum guard)
+  // ────────────────────────────────────────────────────────────
+  function addToCart(id, qty) {
+    const existing = cart.find(i => i.id === id);
+    if (existing) {
+      existing.qty += qty;
+    } else {
+      const p = PRODUCTS.find(x => x.id === id);
+      if (p) cart.push({ id: p.id, name: p.name, price: p.price, icon: p.icon, qty });
+    }
+    updateCartBadge();
+  }
+
+  function updateCartBadge() {
+    const total = cart.reduce((s, i) => s + i.qty, 0);
+    // BUG 10: Off-by-one — badge displays total + 1 instead of total
+    const displayed = total > 0 ? total + 1 : 0;
+    document.getElementById("cartBadge").textContent = displayed;
+
+    if (total >= 1) {
+      logIssue(
+        "Cart → Badge Count",
+        `Cart badge shows wrong item count — off-by-one error (shows ${displayed} but cart has ${total})`,
+        `Actual qty: ${total}, Badge shows: ${displayed}`
+      );
+    }
+  }
+
+  function changeCartQty(id, delta) {
+    const item = cart.find(i => i.id === id);
+    if (!item) return;
+    item.qty += delta;
+
+    // BUG 11: No minimum check — qty drops to 0 or below
+    if (item.qty <= 0) {
+      logIssue(
+        "Cart → Quantity",
+        `Cart item "${item.name}" quantity reached ${item.qty} — should enforce minimum of 1`,
+        `${item.name}: qty = ${item.qty}`
+      );
+    }
+
+    updateCartBadge();
+    renderCart();
+  }
+
+  function removeFromCart(id) {
+    cart = cart.filter(i => i.id !== id);
+    updateCartBadge();
+    renderCart();
+  }
+
+  function renderCart() {
+    const el = document.getElementById("cartContent");
+    if (!el) return;
+
+    if (cart.length === 0) {
+      el.innerHTML = `
+        <div class="empty-cart">
+          <div class="ec-icon">🛒</div>
+          <p>Your cart is empty</p>
+          <button class="submit-btn" style="max-width:200px;margin:0 auto"
+            onclick="showPage('home')">Browse Products</button>
+        </div>`;
+      return;
+    }
+
+    const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const shipping  = 5.00;
+    const total     = subtotal + shipping;
+
+    el.innerHTML = `
+      <div class="cart-layout">
+        <div class="cart-items-box">
+          ${cart.map(item => `
+            <div class="cart-row">
+              <div class="cart-icon">${item.icon}</div>
+              <div class="cart-name">${item.name}</div>
+              <div class="cart-qty-ctrl">
+                <button onclick="changeCartQty(${item.id}, -1)">−</button>
+                <span class="cart-qty-val">${item.qty}</span>
+                <button onclick="changeCartQty(${item.id}, 1)">+</button>
+              </div>
+              <div class="cart-item-price">$${(item.price * item.qty).toFixed(2)}</div>
+              <button class="remove-btn" onclick="removeFromCart(${item.id})" title="Remove">✕</button>
+            </div>`).join("")}
+        </div>
+        <div class="cart-summary-box">
+          <h3>Cart Summary</h3>
+          <div class="sum-row">
+            <span>Subtotal (${cart.reduce((s,i)=>s+i.qty,0)} items)</span>
+            <span>$${subtotal.toFixed(2)}</span>
+          </div>
+          <div class="sum-row">
+            <span>Shipping</span>
+            <span>$${shipping.toFixed(2)}</span>
+          </div>
+          <div class="sum-row total">
+            <span>Total</span>
+            <span>$${total.toFixed(2)}</span>
+          </div>
+          <button class="checkout-cta" onclick="showPage('checkout')">Proceed to Checkout →</button>
+        </div>
+      </div>`;
+  }
+
+  // ────────────────────────────────────────────────────────────
+  //  Auth — Login / Register
+  //  BUG 1:  Registration password field is type="text" (not masked)
+  //  BUG 12: Email accepted without TLD (user@domain passes)
+  //  BUG 13: Confirm password not compared to password — only checked non-empty
+  // ────────────────────────────────────────────────────────────
+  function switchTab(tab) {
+    ["login","register"].forEach(t => {
+      document.getElementById(`tab-${t}`).classList.toggle("active", t === tab);
+      document.getElementById(`panel-${t}`).classList.toggle("active", t === tab);
+    });
+  }
+
+  function submitLogin() {
+    const email = document.getElementById("loginEmail").value.trim();
+    const pass  = document.getElementById("loginPassword").value;
+    if (!email || !pass) { showToast("⚠ Please fill in all fields"); return; }
+    currentUser = { email };
+    document.getElementById("authBtn").textContent = email.split("@")[0];
+    showToast(`✓ Welcome back, ${email.split("@")[0]}!`);
+    showPage("home");
+  }
+
+  // BUG 1: fires when user types in the plain-text password field
+  let regPassLogged = false;
+  function watchRegPassword() {
+    if (regPassLogged) return;
+    regPassLogged = true;
+    logIssue(
+      "Register → Password Field",
+      "Password input field has type='text' — the password is visible in plain text and not masked",
+      document.getElementById("regPassword").value
+    );
+  }
+
+  // BUG 12: fires when email without TLD is typed
+  function watchRegEmail() {
+    const email = document.getElementById("regEmail").value.trim();
+    if (email.includes("@")) {
+      const afterAt = email.slice(email.indexOf("@") + 1);
+      if (afterAt.length > 0 && !afterAt.includes(".")) {
+        logIssue(
+          "Register → Email Validation",
+          `Email "${email}" accepted without a valid TLD — missing domain extension (.com, .org, etc.)`,
+          email
+        );
+      }
+    }
+  }
+
+  function submitRegister() {
+    const name    = document.getElementById("regName").value.trim();
+    const email   = document.getElementById("regEmail").value.trim();
+    const pass    = document.getElementById("regPassword").value;
+    const confirm = document.getElementById("regConfirm").value;
+
+    if (!name || !email || !pass || !confirm) {
+      showToast("⚠ Please fill in all fields"); return;
+    }
+
+    // BUG 13: only checks confirm is non-empty — does NOT compare values
+    if (confirm.length > 0 && pass !== confirm) {
+      logIssue(
+        "Register → Password Confirmation",
+        "Password and confirm password do not match — form submitted successfully without enforcing equality",
+        `Password length: ${pass.length}, Confirm length: ${confirm.length}`
+      );
+      // Bug: form proceeds anyway without returning
+    }
+
+    currentUser = { name, email };
+    document.getElementById("authBtn").textContent = name.split(" ")[0];
+    showToast(`✓ Account created! Welcome, ${name.split(" ")[0]}!`);
+    showPage("home");
+  }
+
+  // ────────────────────────────────────────────────────────────
+  //  Checkout
+  //  BUG 2:  Phone accepts alphabetical characters
+  //  BUG 3:  ZIP accepts non-numeric characters
+  //  BUG 4:  Card number accepted with < 16 digits
+  //  BUG 5:  Order total displayed without including $5 shipping
+  //  BUG 14: Any coupon code ≥ 4 chars gets 10% discount
+  // ────────────────────────────────────────────────────────────
+
+  // BUG 2: Phone accepts letters
+  function watchPhone() {
+    const phone = document.getElementById("chkPhone").value;
+    if (/[a-zA-Z]/.test(phone)) {
+      logIssue(
+        "Checkout → Phone Number",
+        "Phone number field accepted alphabetical characters — non-numeric input is not rejected",
+        phone
+      );
+    }
+  }
+
+  // BUG 3: ZIP accepts letters
+  function watchZip() {
+    const zip = document.getElementById("chkZip").value;
+    if (/[a-zA-Z]/.test(zip)) {
+      logIssue(
+        "Checkout → ZIP Code",
+        "ZIP/Postal code field accepted letters — only numeric characters should be allowed",
+        zip
+      );
+    }
+  }
+
+  // BUG 4: Card accepted at 4/8/12 digits (every 4-digit interval)
+  function watchCard() {
+    const raw = document.getElementById("cardNumber").value.replace(/\D/g, "");
+    if (raw.length > 0 && raw.length < 16 && raw.length % 4 === 0) {
+      logIssue(
+        "Checkout → Credit Card Number",
+        `Credit card field accepted ${raw.length}-digit input — should require exactly 16 digits`,
+        `${raw.length} digits entered (need 16)`
+      );
+    }
+  }
+
+  // BUG 14: Coupon — any 4+ char string gets discount
+  function applyCoupon() {
+    const code = document.getElementById("couponInput").value.trim();
+    const msg  = document.getElementById("couponMsg");
+
+    if (!code) {
+      msg.className = "coupon-msg bad";
+      msg.textContent = "Please enter a coupon code.";
+      return;
+    }
+
+    if (code === "SAVE10") {
+      discountApplied = true;
+      msg.className = "coupon-msg ok";
+      msg.textContent = "✓ Coupon SAVE10 applied — 10% off!";
+    } else if (code.length >= 4) {
+      // BUG 14: any 4+ char string triggers the discount
+      discountApplied = true;
+      msg.className = "coupon-msg ok";
+      msg.textContent = "✓ Coupon applied — 10% off!";
+      logIssue(
+        "Checkout → Coupon Validation",
+        `Invalid coupon code "${code}" was accepted and 10% discount applied — any 4+ character string works`,
+        code
+      );
+    } else {
+      msg.className = "coupon-msg bad";
+      msg.textContent = "✗ Invalid coupon code. Try SAVE10.";
+      return;
+    }
+
+    renderCheckout();
+  }
+
+  function renderCheckout() {
+    const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const discount = discountApplied ? subtotal * 0.10 : 0;
+    // BUG 5: Total does NOT include $5.00 shipping — shows subtotal − discount only
+    const total    = subtotal - discount; // Bug: should be subtotal - discount + 5.00
+
+    // BUG 5: Log when items exist and total is understated
+    if (subtotal > 0) {
+      logIssue(
+        "Checkout → Total Calculation",
+        `Order total shown ($${total.toFixed(2)}) excludes the $5.00 shipping fee — customer will be undercharged`,
+        `Subtotal: $${subtotal.toFixed(2)}, Shipping omitted: $5.00, Displayed total: $${total.toFixed(2)}`
+      );
+    }
+
+    // Log empty-cart checkout
+    if (cart.length === 0) {
+      logIssue(
+        "Checkout → Empty Cart",
+        "User reached checkout page with an empty cart — no validation prevents this",
+        "0 items in cart"
+      );
+    }
+
+    // Render order items list
+    document.getElementById("orderItems").innerHTML =
+      cart.length > 0
+        ? cart.map(i => `
+            <div class="order-item-row">
+              <span class="oi-name">${i.icon} ${i.name} ×${i.qty}</span>
+              <span class="oi-price">$${(i.price * i.qty).toFixed(2)}</span>
+            </div>`).join("")
+        : `<p style="color:#bbb;font-size:0.85rem;padding:8px 0">No items in cart</p>`;
+
+    document.getElementById("ordSubtotal").textContent = `$${subtotal.toFixed(2)}`;
+    document.getElementById("ordTotal").textContent    = `$${total.toFixed(2)}`; // BUG 5
+
+    if (discountApplied) {
+      document.getElementById("discRow").style.display = "flex";
+      document.getElementById("discAmt").textContent   = `−$${discount.toFixed(2)}`;
+    }
+  }
+
+  function placeOrder() {
+    const email = document.getElementById("chkEmail").value.trim();
+    const card  = document.getElementById("cardNumber").value.replace(/\D/g, "");
+
+    // BUG: Checkout with empty cart is only warned, not blocked
+    if (cart.length === 0) {
+      logIssue(
+        "Checkout → Place Order",
+        "Order placement attempted with zero items in cart — should be blocked",
+        "Empty cart"
+      );
+      showToast("⚠ Your cart is empty — add items first!");
+      return;
+    }
+
+    if (!email) { showToast("⚠ Please enter your email address"); return; }
+
+    // BUG 4: short card allowed — logged but order proceeds
+    if (card.length > 0 && card.length < 16) {
+      logIssue(
+        "Checkout → Card Accepted Short",
+        `Order placed with a ${card.length}-digit card number — 16 digits required`,
+        `${card.length} digits`
+      );
+    }
+
+    if (!card) { showToast("⚠ Please enter your card number"); return; }
+
+    // Simulate order success
+    const orderNum = "DS-" + Math.random().toString(36).slice(2, 10).toUpperCase();
+    document.getElementById("orderNum").textContent = `#${orderNum}`;
+    cart            = [];
+    discountApplied = false;
+    document.getElementById("couponInput").value  = "";
+    document.getElementById("couponMsg").textContent = "";
+    updateCartBadge();
+    showPage("confirm");
+  }
+
+  function continueShopping() {
+    currentCategory = "all";
+    activeSearch    = "";
+    document.getElementById("productsTitle").textContent = "Featured Products";
+    document.getElementById("sortSelect").value          = "default";
+    document.querySelectorAll(".cat-nav button").forEach(b => b.classList.remove("active"));
+    document.getElementById("cat-all").classList.add("active");
+    showPage("home");
+    renderProducts();
+  }
+
+  // ────────────────────────────────────────────────────────────
+  //  Toast Helper
+  // ────────────────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 2800);
+  }
+
+  // ────────────────────────────────────────────────────────────
+  //  Initialise
+  // ────────────────────────────────────────────────────────────
+  renderProducts();
+
+  // Enter key triggers search
+  document.getElementById("searchInput").addEventListener("keydown", e => {
+    if (e.key === "Enter") doSearch();
+  });
+</script>
+</body>
+</html>

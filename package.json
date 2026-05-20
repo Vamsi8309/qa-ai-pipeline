@@ -1,0 +1,15 @@
+{
+  "name": "sports-registration-app",
+  "version": "1.0.0",
+  "description": "Sports Registration App with Sentry + Gemini + Jira + Resend automation",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@sentry/node": "^8.0.0",
+    "dotenv": "^16.4.5",
+    "nodemailer": "^6.9.14"
+  }
+}
