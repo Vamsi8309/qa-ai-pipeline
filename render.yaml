@@ -1,0 +1,40 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+# Deploy: push to GitHub, then in Render → New → Blueprint → pick this repo.
+# Secrets (sync:false) are NOT stored here — set them in the Render dashboard.
+services:
+  - type: web
+    name: qa-ai-pipeline
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: RENDER
+        value: "true"
+      - key: NODE_VERSION
+        value: "20"
+      - key: EMAIL_PROVIDER
+        value: resend          # SMTP is blocked on Render free tier; use Resend (HTTP)
+      # ── Set these in the Render dashboard (Environment tab) ──
+      - key: APP_BASE_URL      # set to your Render URL after first deploy, e.g. https://qa-ai-pipeline.onrender.com
+        sync: false
+      - key: JIRA_BASE_URL
+        sync: false
+      - key: JIRA_EMAIL
+        sync: false
+      - key: JIRA_API_TOKEN
+        sync: false
+      - key: JIRA_PROJECT_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_TO
+        sync: false
+      - key: TESTER_EMAIL
+        sync: false
