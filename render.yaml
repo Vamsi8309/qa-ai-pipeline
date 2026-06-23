@@ -1,6 +1,12 @@
 # Render Blueprint — https://render.com/docs/blueprint-spec
 # Deploy: push to GitHub, then in Render → New → Blueprint → pick this repo.
 # Secrets (sync:false) are NOT stored here — set them in the Render dashboard.
+#
+# ⚠️  NOTE: Render's free tier BLOCKS outbound SMTP (ports 25/465/587). With
+# EMAIL_PROVIDER=smtp the app runs and the Accept/Decline links work (public URL),
+# but the review emails will NOT send from Render. To send email from Render,
+# either switch EMAIL_PROVIDER=resend (HTTP, works in the cloud) or use an
+# SMTP-capable host/relay.
 services:
   - type: web
     name: qa-ai-pipeline
@@ -14,9 +20,19 @@ services:
       - key: NODE_VERSION
         value: "20"
       - key: EMAIL_PROVIDER
-        value: resend          # SMTP is blocked on Render free tier; use Resend (HTTP)
+        value: smtp
       # ── Set these in the Render dashboard (Environment tab) ──
-      - key: APP_BASE_URL      # set to your Render URL after first deploy, e.g. https://qa-ai-pipeline.onrender.com
+      - key: APP_BASE_URL      # your Render URL, e.g. https://qa-ai-pipeline.onrender.com
+        sync: false
+      - key: SMTP_PORT         # 465 (SSL) or 587 (STARTTLS); optional
+        sync: false
+      - key: EMAIL_FROM        # Gmail address (SMTP login)
+        sync: false
+      - key: EMAIL_APP_PASSWORD  # Gmail 16-char app password
+        sync: false
+      - key: EMAIL_TO
+        sync: false
+      - key: TESTER_EMAIL
         sync: false
       - key: JIRA_BASE_URL
         sync: false
@@ -29,12 +45,4 @@ services:
       - key: GEMINI_API_KEY
         sync: false
       - key: GROQ_API_KEY
-        sync: false
-      - key: RESEND_API_KEY
-        sync: false
-      - key: EMAIL_FROM
-        sync: false
-      - key: EMAIL_TO
-        sync: false
-      - key: TESTER_EMAIL
         sync: false
