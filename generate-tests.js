@@ -36,6 +36,36 @@ async function postResult(data) {
   } catch (_) {}
 }
 
+// ── Rule-based generator (no AI) — used when Groq + Gemini are both unavailable
+// Scans the fetched HTML for common e-commerce features and builds basic,
+// runnable HTML checks so the pipeline never hard-crashes when AI is down.
+function ruleBasedGenerate(html, count) {
+  const lc = html.toLowerCase();
+  const max = count || 8;
+  const cases = [];
+  const push = (c) => { if (cases.length < max) cases.push({ id: `RB-${String(cases.length + 1).padStart(2, "0")}`, ...c }); };
+
+  if (/type=["']password["']/i.test(html)) {
+    push({ area: "Security", name: "Password fields use type=password", check: "html_contains", value: 'type="password"', expected: "Password inputs are masked" });
+  } else if (lc.includes("password")) {
+    push({ area: "Security", name: "Password field should be masked", check: "html_contains", value: 'type="password"', expected: "A masked password input should exist" });
+  }
+  if (/login|log in|sign in|signin/.test(lc))         push({ area: "Frontend", name: "Login option is present",        check: "html_contains", value: "login",  expected: "Login / Sign-in is available" });
+  if (/signup|sign up|register/.test(lc))             push({ area: "Frontend", name: "Registration/Signup is present", check: "html_contains", value: "register", expected: "User registration is available" });
+  if (lc.includes("search"))                          push({ area: "Frontend", name: "Search is present",              check: "html_contains", value: "search", expected: "Search functionality exists" });
+  if (/cart|basket/.test(lc))                         push({ area: "Frontend", name: "Cart is present",                check: "html_contains", value: "cart",   expected: "Cart / basket is available" });
+  if (/checkout|payment|card/.test(lc))               push({ area: "Backend",  name: "Checkout/payment is present",    check: "html_contains", value: "checkout", expected: "Checkout / payment flow exists" });
+  if (/type=["']email["']/i.test(html))               push({ area: "Frontend", name: "Email field uses type=email",    check: "html_contains", value: 'type="email"', expected: "Email inputs use type=email" });
+  if (lc.includes("<form"))                           push({ area: "Frontend", name: "Page contains a form",           check: "html_contains", value: "<form", expected: "At least one form exists" });
+  push({ area: "Security", name: "Password input is never plain text", check: "html_not_contains", value: 'name="password" type="text"', expected: "Password is never type=text" });
+
+  if (cases.length === 0) {
+    push({ area: "Frontend", name: "Page renders with a title", check: "html_contains", value: "<title", expected: "Page has a <title>" });
+    push({ area: "Frontend", name: "Page has body content",     check: "html_contains", value: "<body",  expected: "Page has a <body>" });
+  }
+  return cases;
+}
+
 // ── Step 1: Ask AI to generate test cases from the HTML ───────────────────────
 async function generateTestCases(html) {
   const stripped = stripHtml(html, 80000);  // from utils.js
@@ -128,7 +158,18 @@ ${stripped}`;
     }
   }
 
-  if (!rawText) throw new Error("All AI models quota exhausted. Please wait a few minutes and try again, or use a fresh Gemini API key.");
+  // All AI providers unavailable (Groq blocked + Gemini quota) → don't crash;
+  // fall back to a rule-based generator so the run still produces test cases.
+  if (!rawText) {
+    console.log("   ⚠️  All AI models unavailable (Groq blocked / Gemini quota) — using rule-based generator (no AI)…");
+    const fallbackCases = ruleBasedGenerate(html, TEST_COUNT);
+    const domainFb = TARGET_URL ? new URL(TARGET_URL).hostname : "DemoShop";
+    saveTestCases(domainFb, SPRINT_NAME, fallbackCases, { source: "url-rulebased", url: TARGET_URL });
+    fs.writeFileSync(path.join(__dirname, "ai-testcases.json"), JSON.stringify(fallbackCases, null, 2));
+    console.log(`✅ Generated ${fallbackCases.length} rule-based test cases (AI was unavailable)\n`);
+    return fallbackCases;
+  }
+
   rawText = rawText.trim().replace(/^```json\s*/i, "").replace(/```$/i, "").trim();
   const parsed    = JSON.parse(rawText);
   const testCases = parsed.testCases ?? parsed;
