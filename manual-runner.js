@@ -169,7 +169,8 @@ async function main() {
         await postResult({
           id: r.id, name: failure?.title || r.id, area: failure?.area,
           status: "fail", actual: failure?.errorValue,
-          category: r.category, reason: r.reason, jiraUrl: r.jiraUrl
+          category: r.category, reason: r.reason, jiraUrl: r.jiraUrl,
+          reviewStatus: r.reviewStatus    // → dashboard shows "⏳ Awaiting tester"
         });
       });
       jiraCount = results.filter(r => r.logged).length;
