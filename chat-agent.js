@@ -59,7 +59,10 @@ function parseIntent(message) {
 
   // ── USER_STORY — user provides a user story or sprint test description ───────
   // Detect: "user story:", "as a user", "given that", "sprint 23 test", "acceptance criteria"
-  const storyWords = ["user story", "story:", "as a user", "as an", "given that", "acceptance criteria", "i want to be able", "should be able", "gherkin"];
+  const storyWords = ["user story", "story:", "as a user", "as an", "given that", "acceptance criteria",
+    "i want to be able", "should be able", "gherkin",
+    // broader scenario phrasing so plain scenarios route to the scenario generator
+    "scenario", "user want", "user wants", "wants to", "i want to", "then the user", "flow", "step "];
   const hasStory   = storyWords.some(w => msg.includes(w));
 
   // Also detect when user says "test sprint 23 for flipkart" without a story body
