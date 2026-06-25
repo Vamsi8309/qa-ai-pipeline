@@ -153,12 +153,13 @@
 
     .chat-input-area {
       padding: 14px 16px; border-top: 1px solid #30363d;
-      display: flex; gap: 10px; align-items: center;
+      display: flex; gap: 10px; align-items: flex-end;
     }
     .chat-input {
       flex: 1; background: #0d1117; border: 1px solid #30363d; border-radius: 8px;
       color: #e6edf3; padding: 10px 14px; font-size: 0.85rem; outline: none;
-      font-family: inherit; resize: none; height: 42px; line-height: 1.4;
+      font-family: inherit; resize: vertical; min-height: 42px; max-height: 140px;
+      line-height: 1.4; overflow-y: auto;
     }
     .chat-input:focus  { border-color: #58a6ff; }
     .chat-input::placeholder { color: #484f58; }
@@ -275,11 +276,12 @@
   </div>
 
   <div class="chat-input-area">
-    <input
-      class="chat-input" id="chatInput" type="text"
-      placeholder="e.g. 'User story: As a user I want to…' · 'Sprint-23 tests for flipkart' · 'manual: check login, verify cart on amazon.in'"
-      onkeydown="if(event.key==='Enter') sendChat()"
-    />
+    <textarea
+      class="chat-input" id="chatInput" rows="1"
+      placeholder="e.g. 'User story: As a user I want to…'   (Enter = send · Shift+Enter = new line)"
+      onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); sendChat(); }"
+      oninput="this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,140)+'px';"
+    ></textarea>
     <button class="chat-send" id="chatSend" onclick="sendChat()">Send ➤</button>
   </div>
 </div>
@@ -497,6 +499,7 @@
     if (!msg) return;
 
     input.value = "";
+    input.style.height = "42px";   // reset after sending a multi-line message
     addMsg("user", msg);
     addTyping();
     setInputState(true);
