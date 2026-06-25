@@ -75,8 +75,12 @@ function parseIntent(message) {
   const storyWords = ["user story", "story:", "as a user", "as an", "given that", "acceptance criteria",
     "i want to be able", "should be able", "gherkin",
     // broader scenario phrasing so plain scenarios route to the scenario generator
-    "scenario", "user want", "user wants", "wants to", "i want to", "then the user", "flow", "step "];
-  const hasStory   = storyWords.some(w => msg.includes(w));
+    "scenario", "user want", "user wants", "wants to", "i want to", "then the user", "flow", "step ",
+    // test-case / QA-style descriptions (e.g. "TC_01 … Objective … Expected Result")
+    "objective", "expected result", "precondition", "test case", "verify ", "navigate to",
+    "signup", "sign up", "log in", "login", "tc_0", "tc-0"];
+  // A story keyword, OR a long descriptive message that includes a URL → treat as a scenario.
+  const hasStory   = storyWords.some(w => msg.includes(w)) || (url && message.length > 140);
 
   // Also detect when user says "test sprint 23 for flipkart" without a story body
   const sprintTest = sprint && (msg.includes("test") || msg.includes("generate") || msg.includes("create"));
