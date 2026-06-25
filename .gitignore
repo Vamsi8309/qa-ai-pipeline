@@ -10,6 +10,7 @@ node_modules/
 pending-reviews.json
 jira-dedup-cache.json
 screenshots/
+generated-tests/
 test-suites/
 ai-testcases.json
 
