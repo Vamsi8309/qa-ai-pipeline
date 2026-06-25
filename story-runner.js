@@ -6,6 +6,7 @@ const { runBatchAutomation } = require("./automation");
 const { getHtml, stripHtml, runCheck } = require("./utils");
 const { saveTestCases, saveRunResult } = require("./storage");
 const { captureFailureShots } = require("./screenshot");
+const { generateScript, saveScript } = require("./script-generator");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const geminiModels = [
@@ -145,6 +146,19 @@ async function main() {
     url: TARGET_URL,
     story: USER_STORY
   });
+
+  // Step 3b: Also AUTO-WRITE an executable Playwright test SCRIPT for the scenario
+  try {
+    console.log(`\n📝 Writing an executable Playwright test script for your scenario…\n`);
+    const scriptResult = await generateScript(USER_STORY, TARGET_URL);
+    const scriptPath   = saveScript(USER_STORY, scriptResult);
+    console.log("──────────────── Generated Test Script ────────────────");
+    console.log(scriptResult.script);
+    console.log("────────────────────────────────────────────────────────");
+    console.log(`💾 Saved → generated-scripts/${scriptPath.split(/[\\/]/).pop()}\n`);
+  } catch (e) {
+    console.log(`   ⚠️  Test script generation skipped: ${e.message}\n`);
+  }
 
   // Step 4: Run all checks
   const failures = [];
