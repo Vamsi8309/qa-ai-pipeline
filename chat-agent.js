@@ -281,9 +281,13 @@ async function handleChat(message, send) {
 // ── Spawn a child process and stream its output ───────────────────────────────
 function runProcess(cmd, args, send) {
   return new Promise((resolve) => {
-    const child = spawn(cmd, args, {
+    // Use the exact node binary and NO shell, so multi-word / multi-line args
+    // (like --story "As a user I want to…") are passed literally and not split
+    // by the shell on spaces (which truncated the scenario to its first word).
+    const bin = cmd === "node" ? process.execPath : cmd;
+    const child = spawn(bin, args, {
       cwd:   path.join(__dirname),
-      shell: true,
+      shell: false,
       env:   { ...process.env }
     });
 
