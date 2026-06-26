@@ -156,8 +156,21 @@ async function main() {
     console.log(scriptResult.script);
     console.log("────────────────────────────────────────────────────────");
     console.log(`💾 Saved → generated-scripts/${scriptPath.split(/[\\/]/).pop()}\n`);
+
+    // Step 3c: EXECUTE the generated script in a real browser (npx playwright test)
+    const { spawnSync } = require("child_process");
+    const rel = `generated-scripts/${scriptPath.split(/[\\/]/).pop()}`;
+    console.log(`▶ Executing the generated script in a real Chromium browser…\n`);
+    const run = spawnSync("npx", ["playwright", "test", rel, "--reporter=list"], {
+      cwd: __dirname, encoding: "utf8", shell: true, timeout: 180000
+    });
+    const out = ((run.stdout || "") + (run.stderr || "")).trim();
+    console.log(out.slice(-2500) || "(no output)");
+    console.log(run.status === 0
+      ? "\n✅ Script execution: ALL TESTS PASSED\n"
+      : "\n❌ Script execution: some tests failed (see report above)\n");
   } catch (e) {
-    console.log(`   ⚠️  Test script generation skipped: ${e.message}\n`);
+    console.log(`   ⚠️  Test script step skipped: ${e.message}\n`);
   }
 
   // Step 4: Run all checks
