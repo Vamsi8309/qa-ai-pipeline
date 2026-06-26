@@ -69,31 +69,115 @@ Return ONLY valid JSON in this exact format — no extra text:
   return ruleBasedScript(scenario, url);
 }
 
-// ── Fallback: generate a basic Playwright template without AI ────────────────
+// ── Fallback: generate a Playwright script WITHOUT AI ─────────────────────────
+// For automationexercise.com (well-known stable selectors) we emit real,
+// runnable signup/login/cart flows based on the scenario keywords. For other
+// sites we emit a smoke-test + stub.
 function ruleBasedScript(scenario, url) {
-  const target = url || "https://example.com";
-  const testCases = [
-    { id: "TC-01", title: "Page loads successfully", steps: [`Navigate to ${target}`, "Wait for page load"], expected: "Page title is visible" },
-    { id: "TC-02", title: "Main scenario check", steps: [scenario], expected: "Scenario behaviour works correctly" }
-  ];
+  const target = url || "https://automationexercise.com/";
+  const s   = scenario.toLowerCase();
+  const isAE = /automationexercise\.com/.test(target);
+  const wantSignup = /sign\s?up|register|new user|create.*account/.test(s);
+  const wantLogin  = /log\s?in|login|sign\s?in/.test(s);
+  const wantCart   = /cart|add.*product|add.*item|basket/.test(s);
+
+  const testCases = [];
+  const blocks = [];
+
+  if (isAE && wantSignup) {
+    testCases.push({ id: "TC-01", title: "New user can sign up and register successfully",
+      steps: ["Open home page", "Click Signup / Login", "Enter name + unique email under New User Signup", "Click Signup", "Fill account information", "Click Create Account", "Verify Account Created", "Continue"],
+      expected: "‘ACCOUNT CREATED!’ is shown and user is logged in" });
+    blocks.push(`  test('TC-01 New user can sign up and register successfully', async ({ page }) => {
+    const email = \`qa_\${Date.now()}@example.com\`;
+    await page.goto('https://automationexercise.com/');
+    await page.click("a[href='/login']");
+    await expect(page.getByText('New User Signup!')).toBeVisible();
+    await page.fill("input[data-qa='signup-name']", 'QA Tester');
+    await page.fill("input[data-qa='signup-email']", email);
+    await page.click("button[data-qa='signup-button']");
+    await expect(page.getByText('Enter Account Information')).toBeVisible();
+    await page.check('#id_gender1');
+    await page.fill('#password', 'Test@12345');
+    await page.selectOption('#days', '10');
+    await page.selectOption('#months', '5');
+    await page.selectOption('#years', '1995');
+    await page.fill('#first_name', 'QA');
+    await page.fill('#last_name', 'Tester');
+    await page.fill('#address1', '123 Test Street');
+    await page.selectOption('#country', 'India');
+    await page.fill('#state', 'Telangana');
+    await page.fill('#city', 'Hyderabad');
+    await page.fill('#zipcode', '500001');
+    await page.fill('#mobile_number', '9999999999');
+    await page.click("button[data-qa='create-account']");
+    await expect(page.getByText('Account Created!')).toBeVisible();
+    await page.click("a[data-qa='continue-button']");
+    await expect(page.getByText(/Logged in as/)).toBeVisible();
+  });`);
+  }
+
+  if (isAE && wantLogin) {
+    testCases.push({ id: `TC-${String(testCases.length + 1).padStart(2, "0")}`, title: "Registered user can log in",
+      steps: ["Create an account", "Log out", "Open Signup / Login", "Enter the registered email + password", "Click Login"],
+      expected: "Header shows ‘Logged in as <name>’" });
+    blocks.push(`  test('TC-${String(blocks.length + 1).padStart(2, "0")} Registered user can log in', async ({ page }) => {
+    // Create a fresh account first so the login is self-contained
+    const email = \`qa_\${Date.now()}@example.com\`;
+    const password = 'Test@12345';
+    await page.goto('https://automationexercise.com/');
+    await page.click("a[href='/login']");
+    await page.fill("input[data-qa='signup-name']", 'QA Tester');
+    await page.fill("input[data-qa='signup-email']", email);
+    await page.click("button[data-qa='signup-button']");
+    await page.check('#id_gender1');
+    await page.fill('#password', password);
+    await page.selectOption('#days', '10'); await page.selectOption('#months', '5'); await page.selectOption('#years', '1995');
+    await page.fill('#first_name', 'QA'); await page.fill('#last_name', 'Tester');
+    await page.fill('#address1', '123 Test Street'); await page.selectOption('#country', 'India');
+    await page.fill('#state', 'Telangana'); await page.fill('#city', 'Hyderabad');
+    await page.fill('#zipcode', '500001'); await page.fill('#mobile_number', '9999999999');
+    await page.click("button[data-qa='create-account']");
+    await page.click("a[data-qa='continue-button']");
+    // Log out, then log back in
+    await page.click("a[href='/logout']");
+    await page.fill("input[data-qa='login-email']", email);
+    await page.fill("input[data-qa='login-password']", password);
+    await page.click("button[data-qa='login-button']");
+    await expect(page.getByText(/Logged in as/)).toBeVisible();
+  });`);
+  }
+
+  if (isAE && wantCart) {
+    testCases.push({ id: `TC-${String(testCases.length + 1).padStart(2, "0")}`, title: "User can add a product to the cart",
+      steps: ["Open Products", "Add the first product to cart", "View Cart"],
+      expected: "Product appears in the cart" });
+    blocks.push(`  test('TC-${String(blocks.length + 1).padStart(2, "0")} User can add a product to the cart', async ({ page }) => {
+    await page.goto('https://automationexercise.com/products');
+    await page.locator('.product-image-wrapper').first().hover();
+    await page.locator('.product-overlay .add-to-cart').first().click();
+    await page.click("button:has-text('Continue Shopping')");
+    await page.click("a[href='/view_cart']");
+    await expect(page.locator('#cart_info_table')).toBeVisible();
+  });`);
+  }
+
+  // Fallback if nothing matched
+  if (blocks.length === 0) {
+    testCases.push({ id: "TC-01", title: "Page loads successfully", steps: [`Navigate to ${target}`], expected: "Page title is visible" });
+    blocks.push(`  test('TC-01 Page loads successfully', async ({ page }) => {
+    await page.goto('${target}');
+    await expect(page).toHaveTitle(/.*/);
+  });`);
+  }
 
   const script = `const { test, expect } = require('@playwright/test');
 
-// Scenario: ${scenario}
-test('Page loads successfully', async ({ page }) => {
-  // Navigate to the target URL
-  await page.goto('${target}');
-  // Verify the page loaded
-  await expect(page).toHaveTitle(/.*/);
+// Scenario: ${scenario.replace(/\n/g, " ").slice(0, 200)}
+test.describe('${target}', () => {
+${blocks.join("\n\n")}
 });
-
-test('${scenario.slice(0, 50)}', async ({ page }) => {
-  await page.goto('${target}');
-  // TODO: Add steps for: ${scenario}
-  // Example:
-  // await page.getByRole('button', { name: 'Search' }).click();
-  // await expect(page.getByText('Results')).toBeVisible();
-});`;
+`;
 
   return { testCases, script };
 }
