@@ -7,7 +7,9 @@
     "start": "node server.js",
     "test": "node testrunner.js",
     "autotest": "node playwright-runner.js",
-    "generate": "node generate-tests.js"
+    "generate": "node generate-tests.js",
+    "test:e2e": "playwright test",
+    "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -16,5 +18,8 @@
     "nodemailer": "^8.0.10",
     "playwright": "^1.60.0",
     "resend": "^6.12.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
   }
 }

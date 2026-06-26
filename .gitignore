@@ -11,8 +11,14 @@ pending-reviews.json
 jira-dedup-cache.json
 screenshots/
 generated-tests/
+generated-scripts/
 test-suites/
 ai-testcases.json
+
+# Playwright run output
+playwright-report/
+test-results/
+.playwright/
 
 # Logs / OS junk
 *.log
