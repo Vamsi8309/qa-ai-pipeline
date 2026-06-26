@@ -111,6 +111,8 @@ async function runAllTests() {
           reason:       r.reason,
           jiraUrl:      r.jiraUrl,
           reviewStatus: r.reviewStatus,
+          duplicate:    r.duplicate,
+          duplicateKey: r.duplicateKey,
           screenshot:   failure?.screenshot || null
         });
       });

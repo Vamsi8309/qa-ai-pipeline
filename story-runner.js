@@ -238,7 +238,8 @@ async function main() {
           id: r.id, name: failure?.title || r.id, area: failure?.area,
           status: "fail", actual: failure?.errorValue,
           category: r.category, reason: r.reason, jiraUrl: r.jiraUrl,
-          reviewStatus: r.reviewStatus, screenshot: failure?.screenshot || null
+          reviewStatus: r.reviewStatus, duplicate: r.duplicate, duplicateKey: r.duplicateKey,
+          screenshot: failure?.screenshot || null
         });
       });
       jiraCount = results.filter(r => r.logged).length;

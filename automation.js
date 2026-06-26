@@ -629,7 +629,27 @@ Reply ONLY with a valid JSON object containing a "results" array:
       continue;
     }
 
-    // ── Human-in-the-loop: create a PENDING review and email the tester ─────
+    // ── Duplicate check FIRST: is this bug already in the Jira backlog? ─────
+    // If yes → tell the chat "already exists as SCRUM-xxx" and DON'T email.
+    const existingBugs = await fetchOpenBacklogBugs();
+    const dup = await findDuplicateBug(
+      { title: failure.title, expected: failure.expected, actual: failure.errorValue },
+      existingBugs
+    );
+    if (dup) {
+      const dupUrl = `${process.env.JIRA_BASE_URL}/browse/${dup.key}`;
+      console.log(`   🔁 ${ai.id}: ALREADY EXISTS in the Jira backlog as ${dup.key} (${Math.round((dup.confidence || 0) * 100)}% match) — no email sent to tester.`);
+      const item = {
+        id: ai.id, logged: false, duplicate: true, duplicateKey: dup.key,
+        jiraUrl: dupUrl, reviewStatus: "duplicate",
+        category: ai.category, reason: ai.classificationReason
+      };
+      output.push(item);
+      if (onResult) await onResult(item);
+      continue;
+    }
+
+    // ── Not a duplicate → create a PENDING review and email the tester ──────
     // No Jira ticket is created here. The tester clicks Accept (→ server logs
     // it to Jira) or Decline (→ discarded) in the email. See server.js.
     const review = reviewStore.createReview({

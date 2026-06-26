@@ -237,7 +237,7 @@ async function runGeneratedTests(testCases, html) {
           id: r.id, name: failure?.title || r.id, area: failure?.area,
           status: "fail", actual: failure?.errorValue,
           category: r.category, reason: r.reason, jiraUrl: r.jiraUrl,
-          reviewStatus: r.reviewStatus    // → dashboard shows "⏳ Awaiting tester"
+          reviewStatus: r.reviewStatus, duplicate: r.duplicate, duplicateKey: r.duplicateKey
         });
       });
       jiraCount = batchResults.filter(r => r.logged).length;
