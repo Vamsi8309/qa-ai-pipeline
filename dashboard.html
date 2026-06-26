@@ -170,6 +170,16 @@
     }
     .chat-send:hover    { background: #388bfd; }
     .chat-send:disabled { background: #21262d; color: #484f58; cursor: not-allowed; }
+    .view-script-btn {
+      background: #1f6feb; color: #fff; border: none; padding: 8px 16px;
+      border-radius: 6px; cursor: pointer; font-size: 0.82rem; font-weight: 600;
+    }
+    .view-script-btn:hover { background: #388bfd; }
+    .script-pre {
+      margin-top: 10px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
+      padding: 14px; overflow: auto; max-height: 360px; font-size: 12px; line-height: 1.5;
+      color: #c9d1d9; white-space: pre; font-family: Consolas, monospace;
+    }
 
     .chat-suggestions { padding: 0 16px 12px; display: flex; gap: 8px; flex-wrap: wrap; }
     .chip {
@@ -227,6 +237,67 @@
     .rerun-btn:hover { background: #1f6feb; color: #fff; border-color: #1f6feb; }
     .suites-empty { text-align: center; padding: 40px; color: #6e7681; font-size: 0.85rem; }
     .suites-loading { text-align: center; padding: 30px; color: #8b949e; font-size: 0.82rem; }
+
+    /* ── Review Accept/Decline buttons ── */
+    .review-actions { display: flex; gap: 6px; }
+    .rv-btn {
+      border: none; border-radius: 6px; padding: 5px 12px; font-size: 0.74rem;
+      font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+    .rv-accept  { background: #238636; color: #fff; }
+    .rv-accept:hover  { background: #2ea043; }
+    .rv-decline { background: #21262d; color: #f85149; border: 1px solid #da3633; }
+    .rv-decline:hover { background: #da3633; color: #fff; }
+
+    /* ── Script Generator ── */
+    .script-wrap { margin: 22px 32px 32px; }
+    .script-intro { margin-bottom: 20px; }
+    .script-intro h3 { color: #f0f6fc; font-size: 1.1rem; margin-bottom: 6px; }
+    .script-intro p  { color: #8b949e; font-size: 0.85rem; }
+    .script-input-row { margin-bottom: 12px; }
+    .script-url {
+      width: 100%; background: #0d1117; border: 1px solid #30363d; border-radius: 8px;
+      color: #e6edf3; padding: 11px 14px; font-size: 0.85rem; outline: none; font-family: inherit;
+    }
+    .script-url:focus { border-color: #58a6ff; }
+    .script-scenario {
+      width: 100%; min-height: 100px; background: #0d1117; border: 1px solid #30363d; border-radius: 8px;
+      color: #e6edf3; padding: 12px 14px; font-size: 0.88rem; outline: none; font-family: inherit;
+      resize: vertical; line-height: 1.5;
+    }
+    .script-scenario:focus { border-color: #58a6ff; }
+    .script-url::placeholder, .script-scenario::placeholder { color: #484f58; }
+    .script-gen-btn {
+      background: #1f6feb; border: none; color: #fff; padding: 11px 22px;
+      border-radius: 8px; cursor: pointer; font-size: 0.88rem; font-weight: 600; transition: background 0.15s;
+    }
+    .script-gen-btn:hover    { background: #388bfd; }
+    .script-gen-btn:disabled { background: #21262d; color: #484f58; cursor: not-allowed; }
+
+    .sg-card {
+      background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+      margin-top: 20px; overflow: hidden;
+    }
+    .sg-card-header {
+      padding: 12px 18px; border-bottom: 1px solid #30363d; font-size: 0.88rem; font-weight: 600; color: #f0f6fc;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .sg-tc { padding: 14px 18px; border-bottom: 1px solid #21262d; }
+    .sg-tc:last-child { border-bottom: none; }
+    .sg-tc-title { font-size: 0.85rem; font-weight: 600; color: #e6edf3; margin-bottom: 6px; }
+    .sg-tc-id    { font-family: monospace; color: #58a6ff; margin-right: 8px; }
+    .sg-tc-steps { font-size: 0.78rem; color: #8b949e; margin: 4px 0 4px 16px; }
+    .sg-tc-expected { font-size: 0.78rem; color: #3fb950; margin-left: 16px; }
+    .sg-code {
+      background: #0d1117; color: #c9d1d9; padding: 16px; font-family: 'Consolas', monospace;
+      font-size: 0.78rem; line-height: 1.5; white-space: pre; overflow-x: auto; margin: 0;
+    }
+    .sg-copy-btn {
+      background: #21262d; border: 1px solid #30363d; color: #8b949e;
+      padding: 4px 12px; border-radius: 6px; font-size: 0.72rem; cursor: pointer;
+    }
+    .sg-copy-btn:hover { background: #2d333b; color: #c9d1d9; }
+    .sg-saved { font-size: 0.72rem; color: #6e7681; padding: 8px 18px; background: #0d1117; }
 
     /* Footer */
     footer { text-align: center; padding: 16px; color: #6e7681; font-size: 0.72rem; border-top: 1px solid #21262d; }
@@ -290,6 +361,7 @@
 <div class="tabs">
   <button class="tab-btn active" onclick="switchTab('live',this)">🔴 Live Run</button>
   <button class="tab-btn"        onclick="switchTab('suites',this)">📁 Test Suites</button>
+  <button class="tab-btn"        onclick="switchTab('script',this)">📝 Script Generator</button>
 </div>
 
 <!-- ── Live Run Tab ────────────────────────────────────────────────────────── -->
@@ -338,11 +410,87 @@
   </div>
 </div>
 
+<!-- ── Script Generator Tab ────────────────────────────────────────────────── -->
+<div id="tab-script" class="tab-panel">
+  <div class="script-wrap">
+    <div class="script-intro">
+      <h3>📝 Test Script Generator</h3>
+      <p>Describe a test scenario in plain English → AI generates test cases + a runnable Playwright script.</p>
+    </div>
+
+    <div class="script-input-row">
+      <input class="script-url" id="scriptUrl" type="text"
+        placeholder="Target URL (optional) — e.g. https://snapdeal.com" />
+    </div>
+    <div class="script-input-row">
+      <textarea class="script-scenario" id="scriptScenario"
+        placeholder="Describe the test scenario… e.g. 'User searches for a product, adds the first result to cart, and verifies the cart count increases'"></textarea>
+    </div>
+    <div class="script-input-row">
+      <button class="script-gen-btn" id="scriptGenBtn" onclick="generateScript()">⚙️ Generate Test Cases + Script</button>
+    </div>
+
+    <div id="scriptOutput"></div>
+  </div>
+</div>
+
 <footer>QA AI Bug Pipeline &nbsp;·&nbsp; Gemini AI &nbsp;·&nbsp; Live via SSE</footer>
 
 <script>
   const CAT_CLASS = { Security:"cat-security", Backend:"cat-backend", Frontend:"cat-frontend", Performance:"cat-performance", Trivial:"cat-trivial" };
   const CAT_EMOJI = { Security:"🔴", Backend:"🟠", Frontend:"🟡", Performance:"🔵", Trivial:"⚪" };
+
+  // Maps testCaseId → pending review id (so the dashboard can show Accept/Decline buttons)
+  let reviewMap = {};
+  let lastRun   = null;
+
+  async function refreshReviews() {
+    try {
+      const reviews = await fetch("/reviews").then(r => r.json());
+      reviewMap = {};
+      reviews.forEach(rv => {
+        if (rv.status === "pending" && rv.testCaseId) reviewMap[rv.testCaseId] = rv.id;
+      });
+      if (lastRun) render(lastRun);   // re-render so buttons appear
+    } catch (_) {}
+  }
+
+  // Toggle the generated test script under the "View Test Script" button
+  async function toggleScript(file, id, btn) {
+    const pre = document.getElementById(id);
+    if (!pre) return;
+    if (pre.style.display === "none") {
+      if (!pre.dataset.loaded) {
+        pre.textContent = "Loading…";
+        try {
+          const r = await fetch("/" + file.replace(/^\/+/, ""));
+          pre.textContent = await r.text();
+          pre.dataset.loaded = "1";
+        } catch (e) { pre.textContent = "Could not load script: " + e.message; }
+      }
+      pre.style.display = "block"; btn.textContent = "📄 Hide Test Script";
+    } else {
+      pre.style.display = "none"; btn.textContent = "📄 View Test Script";
+    }
+  }
+  window.toggleScript = toggleScript;
+
+  // Tester clicks Accept / Decline directly on the dashboard
+  async function reviewBug(reviewId, action, btn) {
+    const row = btn.closest(".review-actions");
+    if (row) row.innerHTML = `<span style="color:#8b949e">⏳ ${action === "accept" ? "Creating ticket…" : "Declining…"}</span>`;
+    try {
+      const res = await fetch(`/api/review/${reviewId}/${action}`, { method: "POST" });
+      const data = await res.json();
+      if (!data.ok && data.message) {
+        if (row) row.innerHTML = `<span style="color:#da3633">⚠️ ${data.message}</span>`;
+      }
+      // dashboard row updates automatically via SSE (updateDashboardRow on server)
+      delete reviewMap[Object.keys(reviewMap).find(k => reviewMap[k] === reviewId)];
+    } catch (err) {
+      if (row) row.innerHTML = `<span style="color:#da3633">⚠️ ${err.message}</span>`;
+    }
+  }
   const STATUS_HTML = {
     pending:     `<span class="status s-pending">● Pending</span>`,
     running:     `<span class="status s-running">⏳ Running</span>`,
@@ -354,6 +502,7 @@
 
   function render(run) {
     if (!run || !run.id) return;
+    lastRun = run;
 
     const tests    = (run.tests || []).filter(t => t.id !== "__done__");
     const done     = tests.filter(t => ["pass","fail","error"].includes(t.status));
@@ -413,7 +562,7 @@
               : t.reviewStatus === "declined"
                 ? `<span style="color:#da3633;font-weight:600">🚫 Not a bug</span>`
                 : t.reviewStatus === "pending"
-                  ? `<span style="color:#d29922;font-weight:600">⏳ Awaiting tester</span>`
+                  ? `<span style="color:#d29922;font-weight:600">📧 Awaiting tester (email sent)</span>`
                   : `<span class="dash">—</span>`}</td>
         </tr>`;
     }).join("");
@@ -435,11 +584,15 @@
 
   // SSE connection
   const es = new EventSource("/stream");
-  es.onmessage = e => { try { render(JSON.parse(e.data)); } catch (_) {} };
+  es.onmessage = e => { try { render(JSON.parse(e.data)); refreshReviews(); } catch (_) {} };
   es.onerror   = () => {
     document.getElementById("liveLabel").textContent = "Reconnecting…";
     document.getElementById("dot").className = "dot";
   };
+
+  // Poll for pending reviews every 4s (so buttons appear after a run finishes)
+  setInterval(refreshReviews, 4000);
+  refreshReviews();
 
   // ── Chat Agent ──────────────────────────────────────────────────────────────
   let chatBusy = false;
@@ -552,6 +705,18 @@
             logBubble.textContent += chunk.text;
             scrollChat();
 
+          } else if (chunk.type === "script") {
+            logBubble = null;
+            const wrap = document.createElement("div");
+            wrap.className = "msg agent";
+            const sid = "scr_" + Math.random().toString(36).slice(2);
+            wrap.innerHTML = `<div class="msg-bubble">
+              <button class="view-script-btn" onclick="toggleScript('${chunk.file}','${sid}',this)">📄 View Test Script</button>
+              <pre id="${sid}" class="script-pre" style="display:none"></pre>
+            </div>`;
+            document.getElementById("chatMessages").appendChild(wrap);
+            scrollChat();
+
           } else if (chunk.type === "success") {
             logBubble = null;
             addMsg("agent", chunk.text, "success");
@@ -583,6 +748,68 @@
     btn.classList.add("active");
     document.getElementById("tab-" + name).classList.add("active");
     if (name === "suites") loadSuites();
+  }
+
+  // ── Test Script Generator ────────────────────────────────────────────────────
+  async function generateScript() {
+    const scenario = document.getElementById("scriptScenario").value.trim();
+    const url      = document.getElementById("scriptUrl").value.trim();
+    const btn      = document.getElementById("scriptGenBtn");
+    const out      = document.getElementById("scriptOutput");
+
+    if (!scenario) { alert("Please describe a test scenario first."); return; }
+
+    btn.disabled = true;
+    btn.textContent = "⏳ Generating…";
+    out.innerHTML = `<div class="suites-loading">🤖 AI is generating test cases and script…</div>`;
+
+    try {
+      const data = await fetch("/generate-script", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ scenario, url })
+      }).then(r => r.json());
+
+      if (!data.ok) {
+        out.innerHTML = `<div class="suites-empty">⚠️ ${data.message}</div>`;
+        return;
+      }
+
+      const tcHtml = (data.testCases || []).map(tc => `
+        <div class="sg-tc">
+          <div class="sg-tc-title"><span class="sg-tc-id">${tc.id}</span>${tc.title}</div>
+          ${(tc.steps || []).map(s => `<div class="sg-tc-steps">• ${s}</div>`).join("")}
+          <div class="sg-tc-expected">✅ Expected: ${tc.expected}</div>
+        </div>`).join("");
+
+      const scriptEsc = (data.script || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+      out.innerHTML = `
+        <div class="sg-card">
+          <div class="sg-card-header">📋 Generated Test Cases (${(data.testCases||[]).length})</div>
+          ${tcHtml}
+        </div>
+        <div class="sg-card">
+          <div class="sg-card-header">
+            <span>⚙️ Playwright Test Script</span>
+            <button class="sg-copy-btn" onclick="copyScript(this)">📋 Copy</button>
+          </div>
+          <pre class="sg-code" id="sgScriptCode">${scriptEsc}</pre>
+          ${data.savedTo ? `<div class="sg-saved">💾 Saved to: ${data.savedTo}</div>` : ""}
+        </div>`;
+    } catch (err) {
+      out.innerHTML = `<div class="suites-empty">⚠️ Error: ${err.message}</div>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "⚙️ Generate Test Cases + Script";
+    }
+  }
+
+  function copyScript(btn) {
+    const code = document.getElementById("sgScriptCode").textContent;
+    navigator.clipboard.writeText(code);
+    btn.textContent = "✅ Copied!";
+    setTimeout(() => { btn.textContent = "📋 Copy"; }, 2000);
   }
 
   // ── Load and render Test Suites ──────────────────────────────────────────────

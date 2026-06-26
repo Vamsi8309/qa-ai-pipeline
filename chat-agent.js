@@ -291,7 +291,18 @@ function runProcess(cmd, args, send) {
       env:   { ...process.env }
     });
 
-    child.stdout.on("data", (d) => send({ type: "log", text: d.toString() }));
+    child.stdout.on("data", (d) => {
+      let text = d.toString();
+      // A [[SCRIPT_FILE]]path[[/SCRIPT_FILE]] marker → render a "View Test Script" button
+      const m = text.match(/\[\[SCRIPT_FILE\]\](.+?)\[\[\/SCRIPT_FILE\]\]/);
+      if (m) {
+        text = text.replace(m[0], "");
+        if (text.trim()) send({ type: "log", text });
+        send({ type: "script", file: m[1].trim() });
+        return;
+      }
+      send({ type: "log", text });
+    });
     child.stderr.on("data", (d) => {
       const m = d.toString().trim();
       if (m) send({ type: "log", text: m + "\n" });

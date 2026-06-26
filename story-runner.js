@@ -147,30 +147,30 @@ async function main() {
     story: USER_STORY
   });
 
-  // Step 3b: Also AUTO-WRITE an executable Playwright test SCRIPT for the scenario
+  // Step 3b: Also AUTO-WRITE + EXECUTE an executable Playwright test SCRIPT.
+  // The script text is NOT dumped here — a "View Test Script" button is shown
+  // in the chat at the end (via the [[SCRIPT_FILE]] marker) instead.
+  let generatedScriptRel = null;
   try {
-    console.log(`\n📝 Writing an executable Playwright test script for your scenario…\n`);
+    console.log(`\n📝 Writing an executable Playwright test script for your scenario…`);
     const scriptResult = await generateScript(USER_STORY, TARGET_URL);
     const scriptPath   = saveScript(USER_STORY, scriptResult);
-    console.log("──────────────── Generated Test Script ────────────────");
-    console.log(scriptResult.script);
-    console.log("────────────────────────────────────────────────────────");
-    console.log(`💾 Saved → generated-scripts/${scriptPath.split(/[\\/]/).pop()}\n`);
+    generatedScriptRel = `generated-scripts/${scriptPath.split(/[\\/]/).pop()}`;
+    console.log(`💾 Test script saved → ${generatedScriptRel}`);
 
     // Step 3c: EXECUTE the generated script in a real browser (npx playwright test)
     const { spawnSync } = require("child_process");
-    const rel = `generated-scripts/${scriptPath.split(/[\\/]/).pop()}`;
     console.log(`▶ Executing the generated script in a real Chromium browser…\n`);
-    const run = spawnSync("npx", ["playwright", "test", rel, "--reporter=list"], {
+    const run = spawnSync("npx", ["playwright", "test", generatedScriptRel, "--reporter=list"], {
       cwd: __dirname, encoding: "utf8", shell: true, timeout: 180000
     });
     const out = ((run.stdout || "") + (run.stderr || "")).trim();
     console.log(out.slice(-2500) || "(no output)");
     console.log(run.status === 0
-      ? "\n✅ Script execution: ALL TESTS PASSED\n"
-      : "\n❌ Script execution: some tests failed (see report above)\n");
+      ? "\n✅ Script execution: ALL TESTS PASSED"
+      : "\n❌ Script execution: some tests failed (see report above)");
   } catch (e) {
-    console.log(`   ⚠️  Test script step skipped: ${e.message}\n`);
+    console.log(`   ⚠️  Test script step skipped: ${e.message}`);
   }
 
   // Step 4: Run all checks
@@ -256,6 +256,9 @@ async function main() {
   console.log(`   🎫 Jira tickets : ${jiraCount} created`);
   console.log(`   💾 Saved to     : test-suites/${domain}/${SPRINT_NAME}/`);
   console.log("═".repeat(60) + "\n");
+
+  // Show the "View Test Script" button in the chat (parsed by chat-agent).
+  if (generatedScriptRel) console.log(`[[SCRIPT_FILE]]${generatedScriptRel}[[/SCRIPT_FILE]]`);
 }
 
 main().catch(err => {

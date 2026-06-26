@@ -5,6 +5,7 @@ const path               = require("path");
 const { runAutomation, createTicketForReview } = require("./automation");
 const { handleChat }     = require("./chat-agent");
 const { listSites, listSprints, listRuns } = require("./storage");
+const { generateScript, saveScript }        = require("./script-generator");
 const reviewStore        = require("./review-store");
 
 const PORT = process.env.PORT || 3000;   // hosts (Render/Railway) inject PORT
@@ -115,10 +116,68 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // ── 0d. Serve generated test scripts (for the "View Test Script" button) ────
+  if (req.method === "GET" && req.url.startsWith("/generated-scripts/")) {
+    const rel      = decodeURIComponent(req.url.split("?")[0]).replace(/^\/+/, "");
+    const filePath = path.normalize(path.join(__dirname, rel));
+    const scriptsDir = path.join(__dirname, "generated-scripts");
+    if (!filePath.startsWith(scriptsDir)) { res.writeHead(403); res.end("forbidden"); return; }
+    fs.readFile(filePath, (err, data) => {
+      if (err) { res.writeHead(404); res.end("not found"); return; }
+      res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache" });
+      res.end(data);
+    });
+    return;
+  }
+
   // ── 0b. Pending reviews feed (for dashboards / debugging) ───────────────────
   if (req.method === "GET" && req.url === "/reviews") {
     res.writeHead(200, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
     res.end(JSON.stringify(reviewStore.getAll()));
+    return;
+  }
+
+  // ── 0b2. Dashboard Accept/Decline (no token — internal trusted dashboard) ───
+  const dashReview = req.method === "POST" && req.url.match(/^\/api\/review\/([^/?]+)\/(accept|decline)$/);
+  if (dashReview) {
+    const [, id, action] = dashReview;
+    const review = reviewStore.getById(id);
+
+    if (!review) {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: false, message: "Review not found" }));
+      return;
+    }
+    if (review.status !== "pending") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, message: `Already ${review.status}`, status: review.status, jiraUrl: review.jiraUrl }));
+      return;
+    }
+
+    if (action === "decline") {
+      reviewStore.decide(id, { status: "declined", declineReason: "not-a-bug" });
+      updateDashboardRow(review.testCaseId, { reviewStatus: "declined" });
+      console.log(`   ✕ Review ${id} declined from dashboard — no Jira ticket`);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, status: "declined" }));
+      return;
+    }
+
+    // accept → create Jira ticket
+    createTicketForReview(review)
+      .then(({ jiraUrl, duplicate, duplicateKey }) => {
+        reviewStore.decide(id, { status: "accepted", jiraUrl, duplicate: !!duplicate, duplicateKey: duplicateKey || null });
+        updateDashboardRow(review.testCaseId, { reviewStatus: "accepted", jiraUrl, duplicate: !!duplicate, duplicateKey: duplicateKey || null });
+        const key = duplicateKey || jiraUrl.split("/browse/")[1] || "created";
+        console.log(`   ✓ Review ${id} accepted from dashboard — Jira ${key}`);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, status: "accepted", jiraUrl, duplicate: !!duplicate, key }));
+      })
+      .catch((err) => {
+        console.log(`   ⚠️  Dashboard accept → Jira failed for ${id}: ${err.message}`);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, message: err.message }));
+      });
     return;
   }
 
@@ -156,6 +215,31 @@ const server = http.createServer((req, res) => {
       } catch (_) {}
       res.writeHead(200);
       res.end();
+    });
+    return;
+  }
+
+  // ── Test Script Generator ─────────────────────────────────────────────────
+  if (req.method === "POST" && req.url === "/generate-script") {
+    let body = "";
+    req.on("data", chunk => (body += chunk));
+    req.on("end", async () => {
+      try {
+        const { scenario, url } = JSON.parse(body || "{}");
+        if (!scenario) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, message: "No scenario provided" }));
+          return;
+        }
+        console.log(`\n📝 Generating test script for: ${scenario.slice(0, 60)}…`);
+        const result   = await generateScript(scenario, url);
+        const filePath = saveScript(scenario, result);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, ...result, savedTo: filePath.split(/[\\/]/).slice(-2).join("/") }));
+      } catch (err) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, message: err.message }));
+      }
     });
     return;
   }
