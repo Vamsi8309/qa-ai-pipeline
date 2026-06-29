@@ -165,7 +165,11 @@ function ruleBasedScript(scenario, url) {
   // Generic LOGIN flow for any site (used when AI is down and it's not AE).
   // Extracts credentials from the scenario text if present, else placeholders.
   if (!isAE && (wantLogin || /facebook|sign\s?in|account/.test(s))) {
-    const email = (scenario.match(/[\w.+-]+@[\w-]+\.[\w.-]+/) || ["your_email@example.com"])[0];
+    // Login id: prefer an explicit "username X", else an email, else placeholder
+    const userMatch  = scenario.match(/user\s?name\s*[:=]?\s*([^\s,]+)/i);
+    const emailMatch = scenario.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
+    const loginId = userMatch ? userMatch[1] : (emailMatch ? emailMatch[0] : "your_email_or_username");
+    const email = loginId;
     const pwMatch = scenario.match(/pass(?:word)?\s*[:=]?\s*([^\s,]+)/i);
     const pw  = pwMatch ? pwMatch[1] : "your_password";
     const fb  = /facebook/.test(s) || /facebook\.com/.test(target);
