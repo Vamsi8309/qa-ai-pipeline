@@ -162,6 +162,33 @@ function ruleBasedScript(scenario, url) {
   });`);
   }
 
+  // Generic LOGIN flow for any site (used when AI is down and it's not AE).
+  // Extracts credentials from the scenario text if present, else placeholders.
+  if (!isAE && (wantLogin || /facebook|sign\s?in|account/.test(s))) {
+    const email = (scenario.match(/[\w.+-]+@[\w-]+\.[\w.-]+/) || ["your_email@example.com"])[0];
+    const pwMatch = scenario.match(/pass(?:word)?\s*[:=]?\s*([^\s,]+)/i);
+    const pw  = pwMatch ? pwMatch[1] : "your_password";
+    const fb  = /facebook/.test(s) || /facebook\.com/.test(target);
+    const note = fb
+      ? "\n    // ⚠️ Facebook blocks automated logins (bot detection / 2FA / checkpoint).\n    // This script is correct, but the run will likely be challenged or blocked."
+      : "";
+    const emailSel = fb ? "'#email'" : "\"input[type='email'], input[name='email'], input[name='username'], #email\"";
+    const passSel  = fb ? "'#pass'"  : "\"input[type='password'], input[name='password'], input[name='pass'], #pass\"";
+    const btnSel   = fb ? "\"button[name='login']\"" : "\"button[type='submit'], button[name='login'], input[type='submit']\"";
+    testCases.push({ id: "TC-01", title: "User can log in with valid credentials",
+      steps: ["Open the site", "Enter email/username", "Enter password", "Click Login"],
+      expected: "User is logged in (no longer on the login page)" });
+    blocks.push(`  test('TC-01 User can log in with valid credentials', async ({ page }) => {${note}
+    await page.goto('${target}');
+    await page.fill(${emailSel}, '${email}');
+    await page.fill(${passSel}, '${pw}');
+    await page.click(${btnSel});
+    await page.waitForLoadState('networkidle');
+    // Best-effort assertion that login succeeded:
+    await expect(page).not.toHaveURL(/login|signin/i);
+  });`);
+  }
+
   // Fallback if nothing matched
   if (blocks.length === 0) {
     testCases.push({ id: "TC-01", title: "Page loads successfully", steps: [`Navigate to ${target}`], expected: "Page title is visible" });
