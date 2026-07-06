@@ -15,7 +15,9 @@ async function captureAllShots(targetUrl, tests, runId) {
   try { ({ chromium } = require("playwright")); }
   catch { console.log("   📸 Screenshots skipped — Playwright not installed"); return out; }
 
-  const url = targetUrl || `http://localhost:${process.env.PORT || 3000}/shop.html`;
+  // Always point to shop.html — localhost:3000 serves dashboard.html, not the shop
+  const base = (targetUrl || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, "");
+  const url  = /localhost|127\.0\.0\.1/.test(base) ? `${base}/shop.html` : base;
   const dir = path.join(SHOTS_ROOT, runId);
   fs.mkdirSync(dir, { recursive: true });
 
@@ -25,9 +27,9 @@ async function captureAllShots(targetUrl, tests, runId) {
   try {
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
-    try { await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 }); }
-    catch (_) {}
-    await page.waitForTimeout(1500);
+    try { await page.goto(url, { waitUntil: "networkidle", timeout: 30000 }); }
+    catch (_) { try { await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 }); } catch (_) {} }
+    await page.waitForTimeout(2000);
 
     for (const t of tests) {
       const file = path.join(dir, `${t.id}.png`);
