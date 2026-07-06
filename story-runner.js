@@ -5,7 +5,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { runBatchAutomation } = require("./automation");
 const { getHtml, stripHtml, runCheck } = require("./utils");
 const { saveTestCases, saveRunResult } = require("./storage");
-const { captureAllShots } = require("./screenshot");
+const { captureFailureShots } = require("./screenshot");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const geminiModels = [
@@ -273,32 +273,19 @@ async function main() {
   };
   saveRunResult(domain, SPRINT_NAME, RUN_ID, [], summary);
 
-  // Step 5b: Screenshot ALL tests (pass + fail) and post to dashboard
-  const allTests = testCases.map(tc => ({
-    id:       tc.id,
-    title:    tc.name || tc.id,
-    area:     tc.area || "Frontend",
-    selector: tc.elementId ? `#${tc.elementId}` : null,
-    status:   failures.find(f => f.id === tc.id) ? "fail" : "pass",
-    errorValue: failures.find(f => f.id === tc.id)?.errorValue || null
-  }));
-
-  const shots = await captureAllShots(TARGET_URL, allTests, RUN_ID);
-
-  for (const t of allTests) {
-    t.screenshot = shots[t.id] || null;
-    if (t.screenshot) {
-      await postResult({
-        id: t.id, name: t.title, area: t.area,
-        status: t.status,
-        actual: t.errorValue || null,
-        screenshot: t.screenshot
-      });
+  // Step 5b: Screenshot only FAILED tests with red highlight
+  if (failures.length > 0) {
+    const shots = await captureFailureShots(TARGET_URL, failures, RUN_ID);
+    for (const f of failures) {
+      f.screenshot = shots[f.id] || null;
+      if (f.screenshot) {
+        await postResult({
+          id: f.id, name: f.title, area: f.area,
+          status: "fail", actual: f.errorValue,
+          screenshot: f.screenshot
+        });
+      }
     }
-  }
-  // Update failures list with screenshots
-  for (const f of failures) {
-    f.screenshot = shots[f.id] || null;
   }
 
   // Step 6: AI classify failures → duplicate check → email tester → Jira

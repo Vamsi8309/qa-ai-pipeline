@@ -55,12 +55,23 @@
       background: #0d1117; border-bottom: 1px solid #21262d;
     }
     td { padding: 12px 16px; font-size: 0.84rem; border-bottom: 1px solid #21262d; vertical-align: middle; }
-    .shot-thumb { width: 56px; height: 36px; object-fit: cover; border-radius: 4px; border: 1px solid #30363d; cursor: pointer; transition: transform 0.15s; }
-    .shot-thumb:hover { transform: scale(1.08); }
-    .shot-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:9999; align-items:center; justify-content:center; }
+    .shot-thumb { width: 56px; height: 36px; object-fit: cover; border-radius: 4px; border: 2px solid #f85149; cursor: pointer; transition: transform 0.15s; }
+    .shot-thumb:hover { transform: scale(1.1); border-color:#ff7b72; }
+    .shot-btn { background:#2a0f0f; color:#f85149; border:1px solid #f85149; padding:4px 10px; border-radius:5px; font-size:0.75rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
+    .shot-btn:hover { background:#3d1515; }
+
+    /* Modal */
+    .shot-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.88); z-index:9999; align-items:flex-start; justify-content:center; padding:40px 20px; overflow-y:auto; }
     .shot-modal.open { display:flex; }
-    .shot-modal img { max-width:90vw; max-height:90vh; border-radius:8px; border:2px solid #30363d; box-shadow:0 8px 40px rgba(0,0,0,.6); }
-    .shot-modal-close { position:fixed; top:18px; right:24px; font-size:1.6rem; color:#fff; cursor:pointer; background:none; border:none; }
+    .shot-modal-box { background:#161b22; border:1px solid #30363d; border-radius:12px; max-width:860px; width:100%; padding:24px; position:relative; }
+    .shot-modal-close { position:absolute; top:14px; right:18px; font-size:1.4rem; color:#8b949e; cursor:pointer; background:none; border:none; }
+    .shot-modal-close:hover { color:#f0f6fc; }
+    .shot-modal-title { font-size:1rem; font-weight:700; color:#f85149; margin-bottom:4px; }
+    .shot-modal-id { font-size:0.78rem; color:#8b949e; font-family:monospace; margin-bottom:16px; }
+    .shot-modal-meta { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+    .shot-modal-tag { background:#21262d; border:1px solid #30363d; border-radius:20px; padding:3px 12px; font-size:0.75rem; color:#c9d1d9; }
+    .shot-modal-error { background:#2a0f0f; border:1px solid #f8514933; border-radius:6px; padding:10px 14px; font-size:0.82rem; color:#f85149; margin-bottom:16px; word-break:break-word; }
+    .shot-modal-img { width:100%; border-radius:8px; border:1px solid #30363d; display:block; }
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: rgba(255,255,255,0.02); }
 
@@ -431,8 +442,14 @@
 
 <!-- Screenshot modal -->
 <div class="shot-modal" id="shotModal" onclick="closeShot()">
-  <button class="shot-modal-close" onclick="closeShot()">✕</button>
-  <img id="shotModalImg" src="" alt="screenshot" onclick="event.stopPropagation()"/>
+  <div class="shot-modal-box" onclick="event.stopPropagation()">
+    <button class="shot-modal-close" onclick="closeShot()">✕</button>
+    <div class="shot-modal-title" id="shotModalName"></div>
+    <div class="shot-modal-id"   id="shotModalId"></div>
+    <div class="shot-modal-meta" id="shotModalMeta"></div>
+    <div class="shot-modal-error" id="shotModalError" style="display:none"></div>
+    <img class="shot-modal-img" id="shotModalImg" src="" alt="screenshot"/>
+  </div>
 </div>
 
 <footer>QA AI Bug Pipeline &nbsp;·&nbsp; Gemini AI &nbsp;·&nbsp; Live via SSE</footer>
@@ -525,8 +542,8 @@
     const rows = tests.map(t => {
       const catClass = t.category ? (CAT_CLASS[t.category] || "") : "";
       const catEmoji = t.category ? (CAT_EMOJI[t.category] || "") : "";
-      const shotHtml = t.screenshot
-        ? `<img class="shot-thumb" src="${t.screenshot}" alt="screenshot" onclick="openShot('${t.screenshot}')" title="Click to enlarge"/>`
+      const shotHtml = (t.status === "fail" || t.status === "error") && t.screenshot
+        ? `<button class="shot-btn" onclick="openShot(${JSON.stringify({src:t.screenshot, id:t.id, name:t.name, actual:t.actual, category:t.category, area:t.area})})">📸 View</button>`
         : `<span class="dash">—</span>`;
       return `
         <tr>
@@ -568,8 +585,28 @@
       </table>`;
   }
 
-  function openShot(src) {
-    document.getElementById("shotModalImg").src = src;
+  function openShot(data) {
+    const d = typeof data === "string" ? { src: data } : data;
+    document.getElementById("shotModalImg").src   = d.src || "";
+    document.getElementById("shotModalName").textContent = "❌ " + (d.name || "Failed Test");
+    document.getElementById("shotModalId").textContent   = d.id  || "";
+
+    // Meta tags
+    const meta = [];
+    if (d.area)     meta.push(`<span class="shot-modal-tag">📁 ${d.area}</span>`);
+    if (d.category) meta.push(`<span class="shot-modal-tag">🤖 ${d.category}</span>`);
+    meta.push(`<span class="shot-modal-tag" style="color:#f85149">❌ Failed</span>`);
+    document.getElementById("shotModalMeta").innerHTML = meta.join("");
+
+    // Error reason
+    const errEl = document.getElementById("shotModalError");
+    if (d.actual) {
+      errEl.style.display = "block";
+      errEl.textContent   = "Reason: " + d.actual;
+    } else {
+      errEl.style.display = "none";
+    }
+
     document.getElementById("shotModal").classList.add("open");
   }
   function closeShot() {
