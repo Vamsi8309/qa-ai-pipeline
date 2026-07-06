@@ -6,7 +6,6 @@ const { runBatchAutomation } = require("./automation");
 const { getHtml, stripHtml, runCheck } = require("./utils");
 const { saveTestCases, saveRunResult } = require("./storage");
 const { captureFailureShots } = require("./screenshot");
-const { generateScript, saveScript } = require("./script-generator");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const geminiModels = [
@@ -105,14 +104,54 @@ ${stripped}`;
   // ── Rule-based fallback — generate basic test cases without AI ────────────
   console.log("   ⚠️  All AI models unavailable — generating rule-based test cases…\n");
   const domain = TARGET_URL ? new URL(TARGET_URL).hostname : "website";
-  return [
-    { id: "US-01", area: "Frontend", check: "html_contains",     value: "search",   name: "Search functionality present",    expected: "Search bar exists on page" },
-    { id: "US-02", area: "Frontend", check: "html_contains",     value: "login",    name: "Login option available",          expected: "Login link/button exists" },
-    { id: "US-03", area: "Security", check: "html_not_contains", value: "password\" type=\"text\"", name: "Password field is masked", expected: "Password uses type=password" },
-    { id: "US-04", area: "Frontend", check: "html_contains",     value: "cart",     name: "Cart icon present",               expected: "Cart/basket visible" },
-    { id: "US-05", area: "Frontend", check: "html_contains",     value: "home",     name: "Home navigation exists",          expected: "Home link present" },
-    { id: "US-06", area: "Frontend", check: "html_contains",     value: domain,     name: `${domain} content loads`,         expected: "Page content is present" }
-  ];
+  const s = story.toLowerCase();
+
+  // Build test cases based on what the scenario mentions
+  const cases = [];
+
+  if (/sign\s?up|register|new user|create.*account/.test(s)) {
+    cases.push(
+      { id: "US-01", area: "Frontend",  check: "html_contains",     value: "signup",            name: "Signup option is present",         expected: "Signup button/link exists on page" },
+      { id: "US-02", area: "Frontend",  check: "html_contains",     value: "name",              name: "Name input field present",         expected: "Name field exists in signup form" },
+      { id: "US-03", area: "Frontend",  check: "html_contains",     value: "email",             name: "Email input field present",        expected: "Email field exists in signup form" },
+      { id: "US-04", area: "Security",  check: "html_not_contains", value: "type=\"text\" name=\"password\"", name: "Password is masked", expected: "Password field uses type=password" },
+      { id: "US-05", area: "Frontend",  check: "html_contains",     value: "submit",            name: "Submit/Register button present",   expected: "Submit button exists" }
+    );
+  }
+
+  if (/log\s?in|login|sign\s?in/.test(s)) {
+    cases.push(
+      { id: `US-${String(cases.length+1).padStart(2,"0")}`, area: "Frontend",  check: "html_contains",     value: "login",    name: "Login option is present",    expected: "Login button/link exists" },
+      { id: `US-${String(cases.length+2).padStart(2,"0")}`, area: "Frontend",  check: "html_contains",     value: "password", name: "Password field present",     expected: "Password input exists" },
+      { id: `US-${String(cases.length+3).padStart(2,"0")}`, area: "Security",  check: "html_not_contains", value: "type=\"text\" name=\"password\"", name: "Password is not shown in plain text", expected: "Password is masked" }
+    );
+  }
+
+  if (/cart|add.*product|add.*item|basket/.test(s)) {
+    cases.push(
+      { id: `US-${String(cases.length+1).padStart(2,"0")}`, area: "Frontend", check: "html_contains", value: "cart",    name: "Cart element present",         expected: "Cart icon/section exists" },
+      { id: `US-${String(cases.length+2).padStart(2,"0")}`, area: "Frontend", check: "html_contains", value: "product", name: "Product listing present",      expected: "Product section exists on page" }
+    );
+  }
+
+  if (/search/.test(s)) {
+    cases.push(
+      { id: `US-${String(cases.length+1).padStart(2,"0")}`, area: "Frontend", check: "html_contains", value: "search", name: "Search bar is present", expected: "Search input exists on page" }
+    );
+  }
+
+  // Always add a basic page-load check
+  if (cases.length === 0) {
+    cases.push(
+      { id: "US-01", area: "Frontend", check: "html_contains",     value: "login",  name: "Login option available",    expected: "Login link/button exists" },
+      { id: "US-02", area: "Frontend", check: "html_contains",     value: "search", name: "Search bar present",        expected: "Search input exists" },
+      { id: "US-03", area: "Security", check: "html_not_contains", value: "password\" type=\"text\"", name: "Password is masked", expected: "Password uses type=password" },
+      { id: "US-04", area: "Frontend", check: "html_contains",     value: "cart",   name: "Cart icon present",         expected: "Cart/basket visible" },
+      { id: "US-05", area: "Frontend", check: "html_contains",     value: domain,   name: `${domain} content loads`,   expected: "Page content is present" }
+    );
+  }
+
+  return cases.slice(0, TEST_COUNT);
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -140,40 +179,14 @@ async function main() {
   console.log(`🤖 Generating ${TEST_COUNT} test cases aligned to your user story…\n`);
   const testCases = await generateFromStory(html, USER_STORY);
 
-  // Step 3: Save test cases to storage (domain / sprint)
+  // Step 3: Save test cases
   saveTestCases(domain, SPRINT_NAME, testCases, {
     source: "user-story",
     url: TARGET_URL,
     story: USER_STORY
   });
 
-  // Step 3b: Also AUTO-WRITE + EXECUTE an executable Playwright test SCRIPT.
-  // The script text is NOT dumped here — a "View Test Script" button is shown
-  // in the chat at the end (via the [[SCRIPT_FILE]] marker) instead.
-  let generatedScriptRel = null;
-  try {
-    console.log(`\n📝 Writing an executable Playwright test script for your scenario…`);
-    const scriptResult = await generateScript(USER_STORY, TARGET_URL);
-    const scriptPath   = saveScript(USER_STORY, scriptResult);
-    generatedScriptRel = `generated-scripts/${scriptPath.split(/[\\/]/).pop()}`;
-    console.log(`💾 Test script saved → ${generatedScriptRel}`);
-
-    // Step 3c: EXECUTE the generated script in a real browser (npx playwright test)
-    const { spawnSync } = require("child_process");
-    console.log(`▶ Executing the generated script in a real Chromium browser…\n`);
-    const run = spawnSync("npx", ["playwright", "test", generatedScriptRel, "--reporter=list"], {
-      cwd: __dirname, encoding: "utf8", shell: true, timeout: 180000
-    });
-    const out = ((run.stdout || "") + (run.stderr || "")).trim();
-    console.log(out.slice(-2500) || "(no output)");
-    console.log(run.status === 0
-      ? "\n✅ Script execution: ALL TESTS PASSED"
-      : "\n❌ Script execution: some tests failed (see report above)");
-  } catch (e) {
-    console.log(`   ⚠️  Test script step skipped: ${e.message}`);
-  }
-
-  // Step 4: Run all checks
+  // Step 4: Run all HTML checks and post results to dashboard
   const failures = [];
   let passed = 0;
 
@@ -206,7 +219,7 @@ async function main() {
     }
   }
 
-  // Step 5: Save run results to storage
+  // Step 5: Save run summary
   const summary = {
     passed,
     failed:  testCases.length - passed,
@@ -227,7 +240,7 @@ async function main() {
     }
   }
 
-  // Step 6: AI classify failures → Jira
+  // Step 6: AI classify failures → duplicate check → email tester → Jira
   let jiraCount = 0;
   if (failures.length > 0) {
     for (const f of failures) await postResult({ id: f.id, name: f.title, status: "classifying" });
@@ -256,9 +269,6 @@ async function main() {
   console.log(`   🎫 Jira tickets : ${jiraCount} created`);
   console.log(`   💾 Saved to     : test-suites/${domain}/${SPRINT_NAME}/`);
   console.log("═".repeat(60) + "\n");
-
-  // Show the "View Test Script" button in the chat (parsed by chat-agent).
-  if (generatedScriptRel) console.log(`[[SCRIPT_FILE]]${generatedScriptRel}[[/SCRIPT_FILE]]`);
 }
 
 main().catch(err => {

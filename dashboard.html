@@ -170,17 +170,6 @@
     }
     .chat-send:hover    { background: #388bfd; }
     .chat-send:disabled { background: #21262d; color: #484f58; cursor: not-allowed; }
-    .view-script-btn {
-      background: #1f6feb; color: #fff; border: none; padding: 8px 16px;
-      border-radius: 6px; cursor: pointer; font-size: 0.82rem; font-weight: 600;
-    }
-    .view-script-btn:hover { background: #388bfd; }
-    .script-pre {
-      margin-top: 10px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
-      padding: 14px; overflow: auto; max-height: 360px; font-size: 12px; line-height: 1.5;
-      color: #c9d1d9; white-space: pre; font-family: Consolas, monospace;
-    }
-
     .chat-suggestions { padding: 0 16px 12px; display: flex; gap: 8px; flex-wrap: wrap; }
     .chip {
       background: #21262d; border: 1px solid #30363d; color: #8b949e;
@@ -455,26 +444,6 @@
     } catch (_) {}
   }
 
-  // Toggle the generated test script under the "View Test Script" button
-  async function toggleScript(file, id, btn) {
-    const pre = document.getElementById(id);
-    if (!pre) return;
-    if (pre.style.display === "none") {
-      if (!pre.dataset.loaded) {
-        pre.textContent = "Loading…";
-        try {
-          const r = await fetch("/" + file.replace(/^\/+/, ""));
-          pre.textContent = await r.text();
-          pre.dataset.loaded = "1";
-        } catch (e) { pre.textContent = "Could not load script: " + e.message; }
-      }
-      pre.style.display = "block"; btn.textContent = "📄 Hide Test Script";
-    } else {
-      pre.style.display = "none"; btn.textContent = "📄 View Test Script";
-    }
-  }
-  window.toggleScript = toggleScript;
-
   // Tester clicks Accept / Decline directly on the dashboard
   async function reviewBug(reviewId, action, btn) {
     const row = btn.closest(".review-actions");
@@ -703,18 +672,6 @@
               logBubble = wrap.querySelector(".msg-bubble");
             }
             logBubble.textContent += chunk.text;
-            scrollChat();
-
-          } else if (chunk.type === "script") {
-            logBubble = null;
-            const wrap = document.createElement("div");
-            wrap.className = "msg agent";
-            const sid = "scr_" + Math.random().toString(36).slice(2);
-            wrap.innerHTML = `<div class="msg-bubble">
-              <button class="view-script-btn" onclick="toggleScript('${chunk.file}','${sid}',this)">📄 View Test Script</button>
-              <pre id="${sid}" class="script-pre" style="display:none"></pre>
-            </div>`;
-            document.getElementById("chatMessages").appendChild(wrap);
             scrollChat();
 
           } else if (chunk.type === "success") {

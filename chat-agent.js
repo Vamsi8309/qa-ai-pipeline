@@ -57,19 +57,6 @@ function parseIntent(message) {
     return { intent: "VIEW_HISTORY", url: null, count: null, sprint: null, story: null, tests: [], reply: "📚 Loading your test history…" };
   }
 
-  // ── SCRIPT_TESTS — REAL Playwright browser automation (clicks/types/asserts)
-  const scriptWords = ["automate", "real test", "real browser", "playwright", "e2e", "end to end",
-    "end-to-end", "real login", "actually login", "execute the flow", "browser automation", "real automation", "run the flow"];
-  if (scriptWords.some(w => msg.includes(w))) {
-    const label = url ? new URL(url).hostname : "shop.html";
-    return {
-      intent: "SCRIPT_TESTS", url, count: count || 5,
-      sprint: sprint || `run-${new Date().toISOString().split("T")[0]}`,
-      story: message, tests: [],
-      reply: `🎭 Generating & running a real Playwright test script for ${label}…`
-    };
-  }
-
   // ── USER_STORY — user provides a user story or sprint test description ───────
   // Detect: "user story:", "as a user", "given that", "sprint 23 test", "acceptance criteria"
   const storyWords = ["user story", "story:", "as a user", "as an", "given that", "acceptance criteria",
@@ -217,21 +204,6 @@ async function handleChat(message, send) {
     return;
   }
 
-  // ── SCRIPT_TESTS — script-runner.js (real Playwright execution) ───────────
-  if (intent.intent === "SCRIPT_TESTS") {
-    const args = ["script-runner.js", "--story", intent.story, "--sprint", intent.sprint, "--count", String(intent.count)];
-    if (intent.url) args.push("--url", intent.url);
-    send({ type: "log", text: [
-      `🎭 Real Browser Test (Playwright)`,
-      `   Site  : ${intent.url || "shop.html"}`,
-      `   Tests : ${intent.count}`,
-      `   Scenario: ${intent.story.slice(0, 100)}…`,
-      ""
-    ].join("\n") });
-    await runProcess("node", args, send);
-    return;
-  }
-
   // ── USER_STORY — story-runner.js ─────────────────────────────────────────
   if (intent.intent === "USER_STORY") {
     const args = ["story-runner.js", "--story", intent.story, "--sprint", intent.sprint, "--count", String(intent.count)];
@@ -292,16 +264,7 @@ function runProcess(cmd, args, send) {
     });
 
     child.stdout.on("data", (d) => {
-      let text = d.toString();
-      // A [[SCRIPT_FILE]]path[[/SCRIPT_FILE]] marker → render a "View Test Script" button
-      const m = text.match(/\[\[SCRIPT_FILE\]\](.+?)\[\[\/SCRIPT_FILE\]\]/);
-      if (m) {
-        text = text.replace(m[0], "");
-        if (text.trim()) send({ type: "log", text });
-        send({ type: "script", file: m[1].trim() });
-        return;
-      }
-      send({ type: "log", text });
+      send({ type: "log", text: d.toString() });
     });
     child.stderr.on("data", (d) => {
       const m = d.toString().trim();
