@@ -40,7 +40,11 @@ async function postResult(data) {
 }
 
 // ── AI: generate test cases from user story + HTML ───────────────────────────
-async function generateFromStory(html, story) {
+async function generateFromStory(html, story, skipAI = false) {
+  if (skipAI) {
+    console.log("   ✅ Using rule-based test cases (accurate HTML validations)…\n");
+    return buildRuleBasedCases(story);
+  }
   const stripped = stripHtml(html, 80000);
 
   const prompt = `
@@ -109,7 +113,11 @@ ${stripped}`;
 
   // ── Rule-based fallback — generate basic test cases without AI ────────────
   console.log("   ⚠️  All AI models unavailable — generating rule-based test cases…\n");
-  const domain = TARGET_URL ? new URL(TARGET_URL).hostname : "website";
+  return buildRuleBasedCases(story);
+}
+
+// ── Rule-based test case builder using exact shop.html strings ───────────────
+function buildRuleBasedCases(story) {
   const s = story.toLowerCase();
 
   // Build accurate test cases using exact strings from shop.html
@@ -178,7 +186,7 @@ ${stripped}`;
     );
   }
 
-  return cases.slice(0, TEST_COUNT);
+  return cases.slice(0, 10);
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -202,9 +210,18 @@ async function main() {
   // Step 1: Fetch HTML
   const html = await getHtml(TARGET_URL);
 
-  // Step 2: AI generates test cases from the user story
-  console.log(`🤖 Generating ${TEST_COUNT} test cases aligned to your user story…\n`);
-  const testCases = await generateFromStory(html, USER_STORY);
+  // Step 2: Generate test cases
+  // For localhost/DemoShop: always use rule-based (exact HTML strings) — AI generates "visible" checks that fail incorrectly.
+  // For external URLs: try AI first, fall back to rule-based.
+  const isLocalhost = !TARGET_URL || /localhost|127\.0\.0\.1/.test(TARGET_URL);
+  let testCases;
+  if (isLocalhost) {
+    console.log(`🔎 Using rule-based test cases for DemoShop (exact HTML validations)…\n`);
+    testCases = await generateFromStory(html, USER_STORY, true); // true = skip AI
+  } else {
+    console.log(`🤖 Generating ${TEST_COUNT} test cases from your user story…\n`);
+    testCases = await generateFromStory(html, USER_STORY, false);
+  }
 
   // Step 3: Save test cases
   saveTestCases(domain, SPRINT_NAME, testCases, {
