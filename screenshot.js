@@ -1,19 +1,15 @@
-// screenshot.js — capture screenshots of the web app for FAILING test cases.
-//
-// Uses Playwright to render the page, highlight the failing element (when a
-// CSS selector is known), and save a PNG into ./screenshots/<runId>/<id>.png.
-// The server exposes these at /screenshots/... so the dashboard can show them.
+// screenshot.js — capture screenshots for ALL test cases (pass + fail).
 require("dotenv").config();
 const fs   = require("fs");
 const path = require("path");
 
 const SHOTS_ROOT = path.join(__dirname, "screenshots");
 
-// failures: [{ id, selector? }]
-// returns: { [id]: "/screenshots/<runId>/<id>.png" } for the ones captured
-async function captureFailureShots(targetUrl, failures, runId) {
+// tests: [{ id, selector?, status }]   status = "pass" | "fail"
+// returns: { [id]: "/screenshots/<runId>/<id>.png" }
+async function captureAllShots(targetUrl, tests, runId) {
   const out = {};
-  if (!Array.isArray(failures) || failures.length === 0) return out;
+  if (!Array.isArray(tests) || tests.length === 0) return out;
 
   let chromium;
   try { ({ chromium } = require("playwright")); }
@@ -23,46 +19,51 @@ async function captureFailureShots(targetUrl, failures, runId) {
   const dir = path.join(SHOTS_ROOT, runId);
   fs.mkdirSync(dir, { recursive: true });
 
-  console.log(`\n   📸 Capturing screenshots of ${url} for ${failures.length} failure(s)…`);
+  console.log(`\n   📸 Capturing screenshots for ${tests.length} test(s) on ${url}…`);
 
   let browser;
   try {
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
     try { await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 }); }
-    catch (_) { /* still try to screenshot whatever rendered */ }
+    catch (_) {}
     await page.waitForTimeout(1500);
 
-    for (const f of failures) {
-      const file = path.join(dir, `${f.id}.png`);
+    for (const t of tests) {
+      const file = path.join(dir, `${t.id}.png`);
       try {
-        // Outline the failing element so the screenshot points at the problem.
-        if (f.selector) {
-          await page.evaluate((sel) => {
+        // For failures: highlight the missing/broken element in red
+        // For passes: highlight the element in green
+        if (t.selector) {
+          const color = t.status === "pass" ? "#3fb950" : "#f85149";
+          const shadow = t.status === "pass"
+            ? "0 0 0 6px rgba(63,185,80,.35)"
+            : "0 0 0 6px rgba(248,81,73,.35)";
+          await page.evaluate(({ sel, color, shadow }) => {
             const el = document.querySelector(sel);
             if (el) {
               el.scrollIntoView({ block: "center", inline: "center" });
               el.dataset._origOutline = el.style.outline;
-              el.style.outline   = "3px solid #f85149";
-              el.style.boxShadow = "0 0 0 6px rgba(248,81,73,.35)";
+              el.style.outline   = `3px solid ${color}`;
+              el.style.boxShadow = shadow;
             }
-          }, f.selector).catch(() => {});
-          await page.waitForTimeout(250);
+          }, { sel: t.selector, color, shadow }).catch(() => {});
+          await page.waitForTimeout(200);
         }
 
         await page.screenshot({ path: file, fullPage: true });
-        out[f.id] = `/screenshots/${runId}/${f.id}.png`;
-        console.log(`   📸 ${f.id} → ${out[f.id]}`);
+        out[t.id] = `/screenshots/${runId}/${t.id}.png`;
+        console.log(`   📸 ${t.id} (${t.status}) → ${out[t.id]}`);
 
-        // Remove the highlight before the next shot.
-        if (f.selector) {
+        // Remove highlight before next shot
+        if (t.selector) {
           await page.evaluate((sel) => {
             const el = document.querySelector(sel);
             if (el) { el.style.outline = el.dataset._origOutline || ""; el.style.boxShadow = ""; }
-          }, f.selector).catch(() => {});
+          }, t.selector).catch(() => {});
         }
       } catch (err) {
-        console.log(`   ⚠️  Screenshot failed for ${f.id}: ${(err.message || "").split("\n")[0]}`);
+        console.log(`   ⚠️  Screenshot failed for ${t.id}: ${(err.message || "").split("\n")[0]}`);
       }
     }
   } catch (err) {
@@ -74,4 +75,9 @@ async function captureFailureShots(targetUrl, failures, runId) {
   return out;
 }
 
-module.exports = { captureFailureShots };
+// Keep old export for compatibility
+async function captureFailureShots(targetUrl, failures, runId) {
+  return captureAllShots(targetUrl, failures.map(f => ({ ...f, status: "fail" })), runId);
+}
+
+module.exports = { captureAllShots, captureFailureShots };
