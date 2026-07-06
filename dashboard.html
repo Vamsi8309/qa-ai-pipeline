@@ -542,8 +542,13 @@
     const rows = tests.map(t => {
       const catClass = t.category ? (CAT_CLASS[t.category] || "") : "";
       const catEmoji = t.category ? (CAT_EMOJI[t.category] || "") : "";
+      const shotKey = t.id + "_" + (t.screenshot||"").split("/").pop();
+      if ((t.status === "fail" || t.status === "error") && t.screenshot) {
+        window._shotData = window._shotData || {};
+        window._shotData[shotKey] = { src: t.screenshot, id: t.id, name: t.name, actual: t.actual, category: t.category, area: t.area };
+      }
       const shotHtml = (t.status === "fail" || t.status === "error") && t.screenshot
-        ? `<button class="shot-btn" onclick="openShot(${JSON.stringify({src:t.screenshot, id:t.id, name:t.name, actual:t.actual, category:t.category, area:t.area})})">📸 View</button>`
+        ? `<button class="shot-btn" onclick="openShot('${shotKey}')">📸 View</button>`
         : `<span class="dash">—</span>`;
       return `
         <tr>
@@ -585,8 +590,10 @@
       </table>`;
   }
 
-  function openShot(data) {
-    const d = typeof data === "string" ? { src: data } : data;
+  function openShot(keyOrData) {
+    const d = (typeof keyOrData === "string" && window._shotData && window._shotData[keyOrData])
+      ? window._shotData[keyOrData]
+      : (typeof keyOrData === "object" ? keyOrData : { src: keyOrData });
     document.getElementById("shotModalImg").src   = d.src || "";
     document.getElementById("shotModalName").textContent = "❌ " + (d.name || "Failed Test");
     document.getElementById("shotModalId").textContent   = d.id  || "";
